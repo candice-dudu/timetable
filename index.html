@@ -34,6 +34,7 @@
         [x-cloak] { display: none !important; }
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
             background: #f1f5f9;
@@ -42,38 +43,47 @@
             background: #cbd5e1;
             border-radius: 9999px;
         }
+        /* Mobile touch optimization */
+        .touch-manipulation {
+            touch-action: manipulation;
+        }
+        .no-select {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col" x-data="timeMatcherApp()" x-init="initApp()">
 
     <!-- Top Navigation Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
             <!-- App Logo & Title -->
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
-                    <i class="fa-solid font-bold fa-calendar-check text-xl"></i>
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 shrink-0">
+                    <i class="fa-solid font-bold fa-calendar-check text-lg sm:text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-extrabold text-lg text-slate-900 tracking-tight leading-none">約時間啦喂</h1>
+                    <h1 class="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight leading-none">約時間啦喂</h1>
                 </div>
             </div>
 
             <!-- Google Auth Status / User Profile Menu -->
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 sm:space-x-3">
                 <!-- Logged Out State: Show Google Login Button -->
                 <template x-if="!isLoggedIn">
-                    <button @click="loginWithGoogle()" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm">
-                        <i class="fa-brands fa-google text-sm"></i>
-                        <span>Google 帳號登入</span>
+                    <button @click="loginWithGoogle()" class="flex items-center space-x-1.5 sm:space-x-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-3 py-2 sm:px-4 sm:py-2 rounded-xl transition shadow-xs">
+                        <i class="fa-brands fa-google text-xs sm:text-sm"></i>
+                        <span class="text-xs">Google 登入</span>
                     </button>
                 </template>
 
                 <!-- Logged In State: Show User Profile Dropdown -->
                 <template x-if="isLoggedIn">
                     <div class="relative" x-data="{ openProfile: false }">
-                        <button @click="openProfile = !openProfile" class="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 p-1.5 pr-3 rounded-full transition">
-                            <img :src="currentUser.avatar" class="w-8 h-8 rounded-full border-2 border-white shadow-xs" :alt="currentUser.name">
+                        <button @click="openProfile = !openProfile" class="flex items-center space-x-1.5 sm:space-x-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 p-1 sm:p-1.5 pr-2.5 sm:pr-3 rounded-full transition touch-manipulation">
+                            <img :src="currentUser.avatar" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white shadow-2xs object-cover" :alt="currentUser.name">
                             <div class="text-left hidden sm:block">
                                 <div class="text-xs font-bold text-slate-800 flex items-center space-x-1">
                                     <span x-text="currentUser.name"></span>
@@ -83,22 +93,22 @@
                                 </div>
                                 <div class="text-[10px] text-emerald-600 font-semibold">● Google 已登入</div>
                             </div>
-                            <i class="fa-solid fa-chevron-down text-slate-400 text-xs ml-1"></i>
+                            <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] sm:text-xs ml-0.5"></i>
                         </button>
 
                         <!-- Dropdown Profile Menu -->
                         <div x-show="openProfile" @click.outside="openProfile = false" x-cloak 
-                             class="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-3 z-50">
-                            <div class="flex items-center space-x-3 p-2 bg-slate-50 rounded-xl mb-2">
-                                <img :src="currentUser.avatar" class="w-10 h-10 rounded-full">
+                             class="absolute right-0 mt-2 w-60 sm:w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-3 z-50">
+                            <div class="flex items-center space-x-2.5 p-2 bg-slate-50 rounded-xl mb-2">
+                                <img :src="currentUser.avatar" class="w-9 h-9 rounded-full object-cover">
                                 <div class="overflow-hidden">
-                                    <div class="text-sm font-bold text-slate-800 truncate flex items-center space-x-1">
+                                    <div class="text-xs sm:text-sm font-bold text-slate-800 truncate flex items-center space-x-1">
                                         <span x-text="currentUser.name"></span>
                                         <template x-if="isAdmin">
                                             <span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1 rounded">👑</span>
                                         </template>
                                     </div>
-                                    <div class="text-xs text-slate-500 truncate" x-text="currentUser.email"></div>
+                                    <div class="text-[11px] text-slate-500 truncate" x-text="currentUser.email"></div>
                                 </div>
                             </div>
                             
@@ -136,112 +146,153 @@
     </header>
 
     <!-- Main App Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <main class="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-3 sm:py-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         
         <!-- Left Column: Calendar & Controls (8 Cols) -->
-        <section class="lg:col-span-8 flex flex-col space-y-4">
+        <section class="lg:col-span-8 flex flex-col space-y-3 sm:space-y-4">
             
             <!-- Calendar Navigation Card -->
-            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-900 flex items-center space-x-2">
-                        <span x-text="monthYearString"></span>
-                        <span class="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full border border-indigo-100 font-semibold" x-text="members.length + ' 位成員'"></span>
-                    </h2>
-                    <p class="text-xs text-slate-500 mt-0.5">點擊日曆切換：<span class="text-emerald-600 font-bold">🟢 有空</span> ➔ <span class="text-amber-600 font-bold">🟡 待定</span> ➔ <span class="text-slate-400">⚪ 取消</span></p>
+            <div class="bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col space-y-2.5 sm:space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+                    <div class="flex items-center justify-between sm:block">
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-bold text-slate-900 flex items-center space-x-2">
+                                <span x-text="monthYearString"></span>
+                                <span class="text-[10px] sm:text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100 font-bold" x-text="members.length + ' 位成員'"></span>
+                            </h2>
+                            <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">點擊切換：<span class="text-emerald-600 font-bold">🟢 有空</span> ➔ <span class="text-amber-600 font-bold">🟡 待定</span> ➔ <span class="text-slate-400">⚪ 取消</span></p>
+                        </div>
+
+                        <!-- Legend status indicator on mobile right side -->
+                        <div class="flex sm:hidden items-center space-x-1.5 bg-slate-50 p-1.5 rounded-lg border border-slate-100 text-[10px]">
+                            <span class="flex items-center space-x-1 text-emerald-700 font-bold">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span>有空</span>
+                            </span>
+                            <span class="text-slate-300">|</span>
+                            <span class="flex items-center space-x-1 text-amber-700 font-bold">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>待定</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Legend status indicator on desktop -->
+                    <div class="hidden sm:flex items-center space-x-2 bg-slate-50 p-2 rounded-xl border border-slate-100 text-xs">
+                        <span class="flex items-center space-x-1 text-emerald-700 font-medium">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <span>有空</span>
+                        </span>
+                        <span class="text-slate-300">|</span>
+                        <span class="flex items-center space-x-1 text-amber-700 font-medium">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <span>待定</span>
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-end space-x-2">
+                        <button @click="prevMonth()" class="p-2 sm:p-2.5 active:bg-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 transition border border-slate-200 touch-manipulation">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <button @click="currentMonth = new Date().getMonth(); currentYear = new Date().getFullYear();" class="px-3 py-1.5 sm:py-2 active:bg-slate-200 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-700 transition border border-slate-200 touch-manipulation">
+                            今天
+                        </button>
+                        <button @click="nextMonth()" class="p-2 sm:p-2.5 active:bg-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 transition border border-slate-200 touch-manipulation">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Legend status indicator -->
-                <div class="flex items-center space-x-2 bg-slate-50 p-2 rounded-xl border border-slate-100 text-xs">
-                    <span class="flex items-center space-x-1 text-emerald-700 font-medium">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                        <span>有空</span>
+                <!-- 🌟 Member Avatar Quick Legend Bar (成員對照列 - 針對手機優化滑動) -->
+                <div class="pt-2 sm:pt-3 border-t border-slate-100 flex items-center space-x-1.5 overflow-x-auto custom-scrollbar pb-1 text-xs -mx-1 px-1">
+                    <span class="text-slate-400 font-bold text-[10px] sm:text-[11px] whitespace-nowrap flex items-center space-x-1 shrink-0">
+                        <i class="fa-solid fa-users text-indigo-500"></i>
+                        <span>成員對照：</span>
                     </span>
-                    <span class="text-slate-300">|</span>
-                    <span class="flex items-center space-x-1 text-amber-700 font-medium">
-                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                        <span>待定</span>
-                    </span>
-                </div>
-
-                <div class="flex items-center space-x-2">
-                    <button @click="prevMonth()" class="p-2.5 hover:bg-slate-100 rounded-xl text-slate-600 transition border border-slate-200">
-                        <i class="fa-solid fa-chevron-left text-xs"></i>
-                    </button>
-                    <button @click="currentMonth = new Date().getMonth(); currentYear = new Date().getFullYear();" class="px-3 py-2 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-700 transition border border-slate-200">
-                        今天
-                    </button>
-                    <button @click="nextMonth()" class="p-2.5 hover:bg-slate-100 rounded-xl text-slate-600 transition border border-slate-200">
-                        <i class="fa-solid fa-chevron-right text-xs"></i>
-                    </button>
+                    <div class="flex items-center space-x-1.5 shrink-0">
+                        <template x-for="member in members" :key="member.id">
+                            <div class="flex items-center space-x-1 bg-slate-50 hover:bg-indigo-50 px-2 py-0.5 sm:py-1 rounded-full border border-slate-200/80 transition whitespace-nowrap">
+                                <img :src="member.avatar" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-white object-cover">
+                                <span x-text="member.name" class="font-bold text-slate-700 text-[10px] sm:text-[11px]"></span>
+                                <template x-if="currentUser && currentUser.id === member.id">
+                                    <span class="text-[8px] sm:text-[9px] bg-indigo-100 text-indigo-700 px-1 rounded font-extrabold">你</span>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="members.length === 0">
+                            <span class="text-[10px] sm:text-[11px] text-slate-400 italic">登入後將在此顯示團隊成員對照</span>
+                        </template>
+                    </div>
                 </div>
             </div>
 
             <!-- Calendar Grid Container -->
-            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex-1 flex flex-col relative">
+            <div class="bg-white rounded-2xl p-2.5 sm:p-5 border border-slate-200/80 shadow-xs flex-1 flex flex-col relative no-select">
                 
                 <!-- Prompt overlay if user is not logged in -->
                 <template x-if="!isLoggedIn">
-                    <div class="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-20 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
-                        <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-xl mb-3 shadow-md">
+                    <div class="absolute inset-0 bg-white/85 backdrop-blur-[2px] z-20 rounded-2xl flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-lg sm:text-xl mb-2 sm:mb-3 shadow-md">
                             <i class="fa-brands fa-google"></i>
                         </div>
-                        <h3 class="text-base font-bold text-slate-900 mb-1">請先登入 Google 帳號</h3>
-                        <p class="text-xs text-slate-500 mb-4 max-w-xs">登入後即可在月曆上標記你有空的時間，並與 5 位朋友實時夾時間！</p>
-                        <button @click="loginWithGoogle()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-md flex items-center space-x-2">
-                            <i class="fa-brands fa-google"></i>
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-1">請先登入 Google 帳號</h3>
+                        <p class="text-[11px] sm:text-xs text-slate-500 mb-3 sm:mb-4 max-w-xs">登入後即可在月曆上標記你有空的時間，並與 5 位朋友實時夾時間！</p>
+                        <button @click="loginWithGoogle()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition shadow-md flex items-center space-x-2 touch-manipulation">
+                            <i class="fa-brands fa-google text-xs"></i>
                             <span>立即使用 Google 登入</span>
                         </button>
                     </div>
                 </template>
 
                 <!-- Day Names Header -->
-                <div class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 mb-2">
-                    <div class="text-rose-500 py-1">日</div>
-                    <div class="py-1">一</div>
-                    <div class="py-1">二</div>
-                    <div class="py-1">三</div>
-                    <div class="py-1">四</div>
-                    <div class="py-1">五</div>
-                    <div class="text-indigo-500 py-1">六</div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[11px] sm:text-xs font-extrabold text-slate-400 mb-1.5 sm:mb-2">
+                    <div class="text-rose-500 py-0.5">日</div>
+                    <div class="py-0.5">一</div>
+                    <div class="py-0.5">二</div>
+                    <div class="py-0.5">三</div>
+                    <div class="py-0.5">四</div>
+                    <div class="py-0.5">五</div>
+                    <div class="text-indigo-500 py-0.5">六</div>
                 </div>
 
-                <!-- Calendar Days Grid -->
-                <div class="grid grid-cols-7 gap-2 flex-1 auto-rows-fr">
+                <!-- Calendar Days Grid (Touch & Screen Adaptive) -->
+                <div class="grid grid-cols-7 gap-1 sm:gap-2 flex-1 auto-rows-fr">
                     <template x-for="(dayObj, index) in calendarDays" :key="index">
                         <div 
                             x-data="{ hovered: false }"
                             @mouseenter="hovered = true"
                             @mouseleave="hovered = false"
+                            @touchstart="hovered = true"
+                            @touchend.debounce.1500ms="hovered = false"
                             :class="{
                                 'bg-slate-50/50 border-transparent text-slate-300 pointer-events-none': !dayObj.inCurrentMonth,
-                                'border-slate-200 hover:border-indigo-400 bg-white': dayObj.inCurrentMonth,
+                                'border-slate-200 hover:border-indigo-400 active:scale-97 bg-white': dayObj.inCurrentMonth,
                                 'ring-2 ring-indigo-600 ring-offset-1': dayObj.isToday && dayObj.inCurrentMonth
                             }"
-                            class="relative min-h-[85px] sm:min-h-[100px] border rounded-2xl p-1.5 sm:p-2 flex flex-col justify-between transition-all duration-150 cursor-pointer group shadow-xs hover:shadow-md"
+                            class="relative min-h-[68px] xs:min-h-[76px] sm:min-h-[100px] border rounded-xl sm:rounded-2xl p-1 sm:p-2 flex flex-col justify-between transition-all duration-100 cursor-pointer group shadow-2xs hover:shadow-md touch-manipulation"
                             @click="dayObj.inCurrentMonth && toggleAvailability(dayObj.dateKey)">
                             
                             <!-- Top Date Bar -->
-                            <div class="flex items-center justify-between">
+                            <div class="flex items-center justify-between leading-none">
                                 <span 
                                     :class="{
                                         'font-extrabold text-indigo-600': dayObj.isToday,
-                                        'text-slate-700 font-bold': dayObj.inCurrentMonth,
+                                        'text-slate-800 font-bold': dayObj.inCurrentMonth,
                                         'text-slate-300': !dayObj.inCurrentMonth
                                     }"
-                                    class="text-xs sm:text-sm" x-text="dayObj.dayNum">
+                                    class="text-[11px] xs:text-xs sm:text-sm" x-text="dayObj.dayNum">
                                 </span>
 
                                 <!-- Quick Badge for Current User Status -->
                                 <template x-if="dayObj.inCurrentMonth && isLoggedIn">
                                     <div>
-                                        <span x-show="getUserStatus(dayObj.dateKey, currentUser.id) === 'free'" class="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md font-bold flex items-center space-x-1">
-                                            <i class="fa-solid fa-check text-[9px]"></i>
-                                            <span class="hidden sm:inline">我有空</span>
+                                        <span x-show="getUserStatus(dayObj.dateKey, currentUser.id) === 'free'" class="text-[9px] sm:text-[10px] bg-emerald-100 text-emerald-800 px-1 sm:px-1.5 py-0.2 rounded font-black flex items-center">
+                                            <i class="fa-solid fa-check text-[8px]"></i>
+                                            <span class="hidden sm:inline ml-0.5">我有空</span>
                                         </span>
-                                        <span x-show="getUserStatus(dayObj.dateKey, currentUser.id) === 'maybe'" class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-bold flex items-center space-x-1">
-                                            <i class="fa-solid fa-question text-[9px]"></i>
-                                            <span class="hidden sm:inline">待定</span>
+                                        <span x-show="getUserStatus(dayObj.dateKey, currentUser.id) === 'maybe'" class="text-[9px] sm:text-[10px] bg-amber-100 text-amber-800 px-1 sm:px-1.5 py-0.2 rounded font-black flex items-center">
+                                            <i class="fa-solid fa-question text-[8px]"></i>
+                                            <span class="hidden sm:inline ml-0.5">待定</span>
                                         </span>
                                     </div>
                                 </template>
@@ -249,51 +300,51 @@
 
                             <!-- Heatmap & Attendance Visualizer -->
                             <template x-if="dayObj.inCurrentMonth">
-                                <div class="mt-1 space-y-1">
+                                <div class="mt-0.5 space-y-0.5 sm:space-y-1">
                                     <!-- Attendance Count Badge -->
                                     <div class="flex items-center justify-between">
-                                        <div class="text-[11px] font-bold flex items-center space-x-1"
+                                        <div class="text-[9px] xs:text-[10px] sm:text-[11px] font-bold flex items-center space-x-0.5 truncate"
                                              :class="getAttendanceColorClass(getAvailableCount(dayObj.dateKey))">
-                                            <i class="fa-solid fa-users text-[10px]"></i>
-                                            <span x-text="getAvailableCount(dayObj.dateKey) + '有空' + (getMaybeCount(dayObj.dateKey) > 0 ? ' (' + getMaybeCount(dayObj.dateKey) + '待定)' : '')"></span>
+                                            <i class="fa-solid fa-users text-[8px] sm:text-[10px]"></i>
+                                            <span x-text="getAvailableCount(dayObj.dateKey) + '有空' + (getMaybeCount(dayObj.dateKey) > 0 ? ' (' + getMaybeCount(dayObj.dateKey) + ')' : '')"></span>
                                         </div>
                                         <template x-if="getAvailableCount(dayObj.dateKey) >= 5">
-                                            <span class="text-[10px] bg-amber-100 text-amber-700 font-extrabold px-1.5 py-0.5 rounded-full animate-pulse">
+                                            <span class="text-[8px] sm:text-[10px] bg-amber-100 text-amber-700 font-extrabold px-1 rounded-full animate-pulse hidden sm:inline">
                                                 ★ 全員
                                             </span>
                                         </template>
                                     </div>
 
-                                    <!-- Avatars Row for Members with border color matching status -->
-                                    <div class="flex items-center -space-x-1.5 overflow-hidden py-1">
+                                    <!-- Avatars Row for Members (Compact overlap for 5 members on mobile) -->
+                                    <div class="flex items-center -space-x-1 sm:-space-x-1.5 overflow-hidden py-0.5">
                                         <template x-for="user in getActiveUsersForDate(dayObj.dateKey)" :key="user.id">
                                             <img :src="user.avatar" 
                                                  :title="user.name + (getUserStatus(dayObj.dateKey, user.id) === 'free' ? ' (有空)' : ' (待定)')" 
                                                  :class="{
-                                                     'border-2 border-emerald-500 shadow-xs': getUserStatus(dayObj.dateKey, user.id) === 'free',
-                                                     'border-2 border-amber-400 opacity-80': getUserStatus(dayObj.dateKey, user.id) === 'maybe'
+                                                     'border sm:border-2 border-emerald-500 shadow-2xs': getUserStatus(dayObj.dateKey, user.id) === 'free',
+                                                     'border sm:border-2 border-amber-400 opacity-80': getUserStatus(dayObj.dateKey, user.id) === 'maybe'
                                                  }"
-                                                 class="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover">
+                                                 class="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-6 sm:h-6 rounded-full object-cover shrink-0">
                                         </template>
                                     </div>
                                 </div>
                             </template>
 
-                            <!-- Hover Tooltip Popup showing exact status per member -->
+                            <!-- Mobile & Desktop Hover/Tap Tooltip Popup -->
                             <div x-show="hovered && dayObj.inCurrentMonth && members.length > 0" 
                                  x-transition:enter="transition ease-out duration-150"
                                  x-transition:enter-start="opacity-0 scale-95"
                                  x-transition:enter-end="opacity-100 scale-100"
                                  x-cloak
-                                 class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-slate-900 text-white text-xs rounded-xl p-2.5 shadow-xl z-40 pointer-events-none">
-                                <div class="font-bold border-b border-slate-700 pb-1 mb-1.5 flex justify-between">
+                                 class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-48 sm:w-52 bg-slate-900 text-white text-xs rounded-xl p-2 sm:p-2.5 shadow-2xl z-40 pointer-events-none">
+                                <div class="font-bold border-b border-slate-700 pb-1 mb-1 flex justify-between text-[11px]">
                                     <span x-text="formatDateTitle(dayObj.dateKey)"></span>
                                     <span class="text-emerald-400 font-mono" x-text="getAvailableCount(dayObj.dateKey) + '有空 / ' + getMaybeCount(dayObj.dateKey) + '待定'"></span>
                                 </div>
-                                <div class="space-y-1">
+                                <div class="space-y-0.5">
                                     <template x-for="member in members" :key="member.id">
-                                        <div class="flex items-center justify-between text-[11px]">
-                                            <div class="flex items-center space-x-1.5">
+                                        <div class="flex items-center justify-between text-[10px] sm:text-[11px]">
+                                            <div class="flex items-center space-x-1">
                                                 <span class="w-1.5 h-1.5 rounded-full" 
                                                       :class="{
                                                           'bg-emerald-400': getUserStatus(dayObj.dateKey, member.id) === 'free',
@@ -320,19 +371,19 @@
             </div>
             
             <!-- Quick Tip Banner -->
-            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center space-x-3 text-xs text-indigo-900">
-                <i class="fa-solid fa-shield-halved text-indigo-500 text-base"></i>
-                <p><strong>專屬群組保護：</strong>管理員已配置白名單存取控制，保護全組數據隱私。</p>
+            <div class="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-3 sm:p-4 flex items-center space-x-2.5 text-xs text-indigo-900">
+                <i class="fa-solid fa-shield-halved text-indigo-500 text-sm sm:text-base shrink-0"></i>
+                <p class="text-[11px] sm:text-xs"><strong>專屬群組保護：</strong>管理員已配置白名單存取控制，保護全組數據隱私。</p>
             </div>
         </section>
 
         <!-- Right Column: Analytics & Best Dates (4 Cols) -->
-        <section class="lg:col-span-4 flex flex-col space-y-6">
+        <section class="lg:col-span-4 flex flex-col space-y-4 sm:space-y-6">
 
             <!-- Best Match Recommendations Panel -->
-            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-slate-900 flex items-center space-x-2 text-base">
+            <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col">
+                <div class="flex items-center justify-between mb-3 sm:mb-4">
+                    <h3 class="font-bold text-slate-900 flex items-center space-x-2 text-sm sm:text-base">
                         <i class="fa-solid fa-trophy text-amber-500"></i>
                         <span>最多人有空的日子</span>
                     </h3>
@@ -340,9 +391,9 @@
                 </div>
 
                 <!-- Best Matches List -->
-                <div class="space-y-3 custom-scrollbar overflow-y-auto max-h-[380px] pr-1">
+                <div class="space-y-2.5 sm:space-y-3 custom-scrollbar overflow-y-auto max-h-[320px] sm:max-h-[380px] pr-0.5">
                     <template x-for="(match, idx) in bestMatchingDates" :key="match.dateKey">
-                        <div class="border rounded-2xl p-3.5 transition hover:shadow-md bg-gradient-to-r"
+                        <div class="border rounded-2xl p-3 transition hover:shadow-md bg-gradient-to-r"
                              :class="{
                                 'border-amber-200 from-amber-50/40 via-white to-white': match.freeCount >= 5,
                                 'border-emerald-200 from-emerald-50/30 via-white to-white': match.freeCount === 4,
@@ -350,16 +401,16 @@
                              }">
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex items-center space-x-2">
-                                    <span class="w-6 h-6 rounded-lg font-black text-xs flex items-center justify-center"
+                                    <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg font-black text-[11px] sm:text-xs flex items-center justify-center"
                                           :class="{
                                               'bg-amber-500 text-white': idx === 0,
                                               'bg-slate-200 text-slate-700': idx > 0
                                           }" x-text="'#' + (idx + 1)"></span>
-                                    <span class="font-bold text-sm text-slate-800" x-text="formatDateTitle(match.dateKey)"></span>
+                                    <span class="font-bold text-xs sm:text-sm text-slate-800" x-text="formatDateTitle(match.dateKey)"></span>
                                 </div>
-                                <div class="flex items-center space-x-1 text-xs font-black">
-                                    <span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800" x-text="match.freeCount + ' 人有空'"></span>
-                                    <span x-show="match.maybeCount > 0" class="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800" x-text="match.maybeCount + ' 待定'"></span>
+                                <div class="flex items-center space-x-1 text-[10px] sm:text-xs font-black">
+                                    <span class="px-1.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800" x-text="match.freeCount + ' 人有空'"></span>
+                                    <span x-show="match.maybeCount > 0" class="px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-800" x-text="match.maybeCount + ' 待定'"></span>
                                 </div>
                             </div>
 
@@ -367,20 +418,20 @@
                             <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
                                 <div class="flex items-center -space-x-1.5">
                                     <template x-for="user in match.users" :key="user.id">
-                                        <img :src="user.avatar" :title="user.name" class="w-6 h-6 rounded-full border-2 border-white shadow-xs">
+                                        <img :src="user.avatar" :title="user.name" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-xs object-cover">
                                     </template>
                                 </div>
-                                <button @click="openEventModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition">
+                                <button @click="openEventModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
                                     <span>定為聚會日</span>
-                                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                                    <i class="fa-solid fa-arrow-right text-[9px]"></i>
                                 </button>
                             </div>
                         </div>
                     </template>
 
                     <template x-if="bestMatchingDates.length === 0">
-                        <div class="text-center py-8 text-slate-400">
-                            <i class="fa-regular fa-calendar-xmark text-3xl mb-2"></i>
+                        <div class="text-center py-6 sm:py-8 text-slate-400">
+                            <i class="fa-regular fa-calendar-xmark text-2xl sm:text-3xl mb-1.5"></i>
                             <p class="text-xs">這個月尚未有人標記有空的日子</p>
                         </div>
                     </template>
@@ -388,32 +439,32 @@
             </div>
 
             <!-- Member Status Overview -->
-            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-                <h3 class="font-bold text-slate-900 mb-3 text-sm flex items-center justify-between">
+            <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
+                <h3 class="font-bold text-slate-900 mb-2.5 sm:mb-3 text-xs sm:text-sm flex items-center justify-between">
                     <span>群組成員參與狀態</span>
-                    <span class="text-xs font-normal text-emerald-600 font-bold" x-text="members.length + ' 人已加入'"></span>
+                    <span class="text-xs font-semibold text-emerald-600" x-text="members.length + ' 人已加入'"></span>
                 </h3>
 
-                <div class="space-y-2.5 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                <div class="space-y-2 max-h-56 sm:max-h-64 overflow-y-auto custom-scrollbar pr-0.5">
                     <template x-for="member in members" :key="member.id">
                         <div class="flex items-center justify-between p-2 rounded-xl border border-slate-100 hover:bg-slate-50 transition">
-                            <div class="flex items-center space-x-2.5">
-                                <img :src="member.avatar" class="w-8 h-8 rounded-full border border-slate-200">
+                            <div class="flex items-center space-x-2">
+                                <img :src="member.avatar" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-slate-200 object-cover">
                                 <div>
                                     <div class="text-xs font-bold text-slate-800 flex items-center space-x-1">
                                         <span x-text="member.name"></span>
                                         <template x-if="currentUser && currentUser.id === member.id">
-                                            <span class="text-[9px] bg-indigo-100 text-indigo-700 px-1.5 py-0.2 rounded font-bold">你</span>
+                                            <span class="text-[9px] bg-indigo-100 text-indigo-700 px-1 py-0.2 rounded font-bold">你</span>
                                         </template>
                                         <template x-if="member.email && member.email.toLowerCase() === adminEmail.toLowerCase()">
-                                            <span class="text-[9px] bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold">👑 管理員</span>
+                                            <span class="text-[9px] bg-amber-100 text-amber-800 border border-amber-200 px-1 py-0.2 rounded font-bold">👑 管理員</span>
                                         </template>
                                     </div>
-                                    <div class="text-[10px] text-slate-400 truncate max-w-[120px]" x-text="member.email"></div>
+                                    <div class="text-[10px] text-slate-400 truncate max-w-[110px] sm:max-w-[130px]" x-text="member.email"></div>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-xs font-extrabold text-indigo-600" x-text="getUserTotalAvailableDays(member.id)"></span>
+                                <span class="text-xs sm:text-sm font-extrabold text-indigo-600" x-text="getUserTotalAvailableDays(member.id)"></span>
                                 <span class="text-[10px] text-slate-400 block">天有空</span>
                             </div>
                         </div>
@@ -426,10 +477,10 @@
             </div>
 
             <!-- Share Actions -->
-            <div class="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-5 text-white shadow-lg shadow-indigo-100">
-                <h4 class="font-bold text-sm mb-1">邀請 5 位朋友夾時間</h4>
-                <p class="text-xs text-indigo-100 mb-4">發送專屬連結，讓朋友使用 Google 帳號直接登入填寫時間。</p>
-                <button @click="copyShareLink()" class="w-full bg-white text-indigo-600 hover:bg-indigo-50 font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-md">
+            <div class="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-4 sm:p-5 text-white shadow-lg shadow-indigo-100">
+                <h4 class="font-bold text-xs sm:text-sm mb-1">邀請 5 位朋友夾時間</h4>
+                <p class="text-[11px] sm:text-xs text-indigo-100 mb-3 sm:mb-4">發送專屬連結，讓朋友使用 Google 帳號直接登入填寫時間。</p>
+                <button @click="copyShareLink()" class="w-full bg-white text-indigo-600 hover:bg-indigo-50 font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-md active:scale-98 touch-manipulation">
                     <i class="fa-solid fa-link"></i>
                     <span>複製專屬分享連結</span>
                 </button>
@@ -437,91 +488,91 @@
         </section>
     </main>
 
-    <!-- Event Creation Modal -->
-    <div x-show="showEventModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-        <div @click.outside="showEventModal = false" class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold mb-4">
+    <!-- Event Creation Modal (Mobile Scroll Optimized) -->
+    <div x-show="showEventModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+        <div @click.outside="showEventModal = false" class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                 <i class="fa-solid fa-bullhorn"></i>
             </div>
-            <h3 class="text-base font-bold text-slate-900 mb-1">敲定聚會活動</h3>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-0.5">敲定聚會活動</h3>
             <p class="text-xs text-slate-500 mb-4">確定將日期選在：<strong class="text-indigo-600" x-text="formatDateTitle(selectedDateKey)"></strong></p>
 
             <div class="mb-5">
-                <label class="block text-xs font-bold text-slate-700 mb-1">活動主題：</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">活動主題：</label>
                 <input type="text" x-model="eventTitle" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
             </div>
 
-            <div class="flex space-x-3">
-                <button @click="showEventModal = false" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition">
+            <div class="flex space-x-2.5">
+                <button @click="showEventModal = false" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition touch-manipulation">
                     取消
                 </button>
-                <button @click="confirmEvent()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md">
+                <button @click="confirmEvent()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md touch-manipulation">
                     發起活動通知
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Edit Display Name Modal -->
-    <div x-show="openSettingsModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-        <div @click.outside="openSettingsModal = false" class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold mb-4">
+    <!-- Edit Display Name Modal (Mobile Keyboard Friendly) -->
+    <div x-show="openSettingsModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+        <div @click.outside="openSettingsModal = false" class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                 <i class="fa-solid fa-user-pen"></i>
             </div>
-            <h3 class="text-base font-bold text-slate-900 mb-1">修改顯示暱稱</h3>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-0.5">修改顯示暱稱</h3>
             <p class="text-xs text-slate-500 mb-4">修改後，群組內的其他朋友將會看到你的新名稱：</p>
 
             <div class="mb-5">
-                <label class="block text-xs font-bold text-slate-700 mb-1">我的暱稱 / 綽號：</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">我的暱稱 / 綽號：</label>
                 <input type="text" x-model="tempDisplayName" placeholder="例如：阿達 / Alex" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
             </div>
 
-            <div class="flex space-x-3">
-                <button @click="openSettingsModal = false" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition">
+            <div class="flex space-x-2.5">
+                <button @click="openSettingsModal = false" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition touch-manipulation">
                     取消
                 </button>
-                <button @click="saveDisplayName()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md">
+                <button @click="saveDisplayName()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md touch-manipulation">
                     儲存修改
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Whitelist Management Modal (Restricted to Admin Only) -->
-    <div x-show="openWhitelistModal && isAdmin" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-        <div @click.outside="openWhitelistModal = false" class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+    <!-- Whitelist Management Modal (Restricted to Admin Only, Mobile Scrollable) -->
+    <div x-show="openWhitelistModal && isAdmin" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+        <div @click.outside="openWhitelistModal = false" class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg font-bold">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-base sm:text-lg font-bold shrink-0">
                         <i class="fa-solid fa-crown"></i>
                     </div>
                     <div>
-                        <h3 class="text-base font-bold text-slate-900">管理員控制台：5位白名單</h3>
-                        <p class="text-xs text-slate-500">設定許可登入的 Google Email</p>
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900">管理員控制台：5位白名單</h3>
+                        <p class="text-[11px] sm:text-xs text-slate-500">設定許可登入的 Google Email</p>
                     </div>
                 </div>
-                <button @click="openWhitelistModal = false" class="text-slate-400 hover:text-slate-600">
+                <button @click="openWhitelistModal = false" class="text-slate-400 hover:text-slate-600 p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
             <!-- Whitelist Control Switch -->
-            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 mb-4 flex items-center justify-between">
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 mb-3 flex items-center justify-between">
                 <div>
                     <span class="text-xs font-bold text-slate-800 block">開啟白名單限制</span>
                     <span class="text-[10px] text-slate-500">非名單內的 Google 帳號將無法登入</span>
                 </div>
-                <input type="checkbox" x-model="enableWhitelist" class="w-5 h-5 accent-indigo-600 rounded cursor-pointer">
+                <input type="checkbox" x-model="enableWhitelist" class="w-5 h-5 accent-indigo-600 rounded cursor-pointer touch-manipulation">
             </div>
 
             <!-- Set Admin Email -->
-            <div class="mb-4 bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
+            <div class="mb-3 bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
                 <label class="block text-xs font-bold text-amber-900 mb-1">👑 指定群組管理員 Email：</label>
                 <input type="email" x-model="adminEmail" placeholder="admin@gmail.com" class="w-full border border-amber-200 bg-white rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-500 outline-none">
             </div>
 
             <!-- Email List Inputs (Max 5 Members) -->
-            <div class="space-y-2 mb-5">
+            <div class="space-y-2 mb-4">
                 <label class="block text-xs font-bold text-slate-700">許可登入的 Google Email 列表 (最多 5 位)：</label>
                 <template x-for="(email, idx) in allowedEmails" :key="idx">
                     <div class="flex items-center space-x-2">
@@ -531,18 +582,18 @@
                 </template>
             </div>
 
-            <div class="flex space-x-3">
-                <button @click="openWhitelistModal = false" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition">
+            <div class="flex space-x-2.5">
+                <button @click="openWhitelistModal = false" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition touch-manipulation">
                     取消
                 </button>
-                <button @click="saveWhitelist()" class="flex-1 bg-amber-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-amber-700 transition shadow-md">
+                <button @click="saveWhitelist()" class="flex-1 bg-amber-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-amber-700 transition shadow-md touch-manipulation">
                     套用並同步雲端
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Toast Notification (Mobile Fixed Safe Bottom Area) -->
     <div x-show="toast.visible" x-cloak 
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 translate-y-4"
@@ -550,9 +601,9 @@
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100 translate-y-0"
          x-transition:leave-end="opacity-0 translate-y-4"
-         class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 z-50 text-xs font-semibold">
-        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
-        <span x-text="toast.message"></span>
+         class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-5 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 z-50 text-xs font-semibold">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-base shrink-0"></i>
+        <span x-text="toast.message" class="truncate"></span>
     </div>
 
     <!-- Application Logic Script -->
@@ -565,12 +616,12 @@
         // 🔑 請在此處填寫你的 Firebase Console 配置項目
         // =========================================================================
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyCFFQ6v_X2O5oOco3DtXRHQyRYPbNpWPXE",
-            authDomain: "fdmeet.firebaseapp.com",
-            projectId: "fdmeet",
-            storageBucket: "fdmeet.firebasestorage.app",
-            messagingSenderId: "818872276812",
-            appId: "1:818872276812:web:d1e8797f7c0f00375c21e9"
+    apiKey: "AIzaSyCFFQ6v_X2O5oOco3DtXRHQyRYPbNpWPXE",
+  authDomain: "fdmeet.firebaseapp.com",
+  projectId: "fdmeet",
+  storageBucket: "fdmeet.firebasestorage.app",
+  messagingSenderId: "818872276812",
+  appId: "1:818872276812:web:d1e8797f7c0f00375c21e9"
         };
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'friends-time-sync';
