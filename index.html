@@ -307,8 +307,9 @@
                             @touchend.debounce.1500ms="hovered = false"
                             :class="{
                                 'bg-slate-50/40 border-transparent text-slate-300 pointer-events-none': !dayObj.inCurrentMonth,
-                                'border-slate-200 hover:border-indigo-400 active:scale-97 bg-white': dayObj.inCurrentMonth && !dayObj.isSunday && !dayObj.holidayName,
-                                'border-rose-200 bg-rose-50/30 hover:border-rose-400': dayObj.inCurrentMonth && (dayObj.isSunday || dayObj.holidayName),
+                                'border-slate-200 hover:border-indigo-400 active:scale-97 bg-white': dayObj.inCurrentMonth && !dayObj.isSunday && !dayObj.holidayName && !dayObj.customEventName,
+                                'border-purple-300 bg-purple-50/70 hover:border-purple-400': dayObj.inCurrentMonth && dayObj.customEventName,
+                                'border-rose-200 bg-rose-50/30 hover:border-rose-400': dayObj.inCurrentMonth && !dayObj.customEventName && (dayObj.isSunday || dayObj.holidayName),
                                 'ring-2 ring-indigo-600 ring-offset-1': dayObj.isToday && dayObj.inCurrentMonth,
                                 'ring-2 ring-amber-400 bg-amber-50/30': confirmedEvent && confirmedEvent.dateKey === dayObj.dateKey && dayObj.inCurrentMonth,
                                 'opacity-30 bg-slate-100/50': focusedUserId && dayObj.inCurrentMonth && !getUserStatus(dayObj.dateKey, focusedUserId),
@@ -319,26 +320,32 @@
                             class="relative min-h-[70px] xs:min-h-[78px] sm:min-h-[105px] border rounded-xl sm:rounded-2xl p-1 sm:p-1.5 flex flex-col justify-between transition-all duration-100 cursor-pointer group shadow-2xs hover:shadow-md touch-manipulation"
                             @click="dayObj.inCurrentMonth && toggleAvailability(dayObj.dateKey)">
                             
-                            <!-- Top Date Bar (Red for Sundays & Holidays) -->
+                            <!-- Top Date Bar -->
                             <div class="flex items-start justify-between leading-none">
                                 <div class="flex flex-col">
                                     <span 
                                         :class="{
                                             'font-extrabold text-indigo-600': dayObj.isToday,
-                                            'text-rose-600 font-extrabold': dayObj.inCurrentMonth && (dayObj.isSunday || dayObj.holidayName),
-                                            'text-slate-800 font-bold': dayObj.inCurrentMonth && !dayObj.isSunday && !dayObj.holidayName,
+                                            'text-purple-700 font-extrabold': dayObj.inCurrentMonth && dayObj.customEventName,
+                                            'text-rose-600 font-extrabold': dayObj.inCurrentMonth && !dayObj.customEventName && (dayObj.isSunday || dayObj.holidayName),
+                                            'text-slate-800 font-bold': dayObj.inCurrentMonth && !dayObj.isSunday && !dayObj.holidayName && !dayObj.customEventName,
                                             'text-slate-300': !dayObj.inCurrentMonth
                                         }"
                                         class="text-[11px] xs:text-xs sm:text-sm" x-text="dayObj.dayNum">
                                     </span>
                                     
-                                    <!-- 🇭🇰 Hong Kong Public Holiday Tag -->
-                                    <template x-if="dayObj.inCurrentMonth && dayObj.holidayName">
+                                    <!-- 🎂 自訂活動 / 生日標籤 (紫色高亮) -->
+                                    <template x-if="dayObj.inCurrentMonth && dayObj.customEventName">
+                                        <span class="text-[8px] xs:text-[9px] text-purple-700 bg-purple-100 font-black truncate max-w-[48px] xs:max-w-[65px] sm:max-w-[85px] leading-tight mt-0.5 px-1 rounded" x-text="dayObj.customEventName"></span>
+                                    </template>
+
+                                    <!-- 🇭🇰 香港公眾假期標籤 (紅色高亮) -->
+                                    <template x-if="dayObj.inCurrentMonth && !dayObj.customEventName && dayObj.holidayName">
                                         <span class="text-[8px] xs:text-[9px] text-rose-600 font-black truncate max-w-[48px] xs:max-w-[65px] sm:max-w-[85px] leading-tight mt-0.5" x-text="dayObj.holidayName"></span>
                                     </template>
                                     
                                     <!-- 🌙 Eve of Holiday Tag -->
-                                    <template x-if="dayObj.inCurrentMonth && !dayObj.holidayName && dayObj.isEveHoliday">
+                                    <template x-if="dayObj.inCurrentMonth && !dayObj.holidayName && !dayObj.customEventName && dayObj.isEveHoliday">
                                         <span class="text-[8px] xs:text-[9px] text-amber-600 font-bold truncate max-w-[48px] xs:max-w-[65px] sm:max-w-[85px] leading-tight mt-0.5">🌙 假期前夕</span>
                                     </template>
                                 </div>
@@ -476,10 +483,13 @@
                                                 <span class="text-[9px] bg-indigo-100 text-indigo-700 font-extrabold px-1 rounded">Fri</span>
                                             </template>
                                         </div>
-                                        <template x-if="match.holidayName">
+                                        <template x-if="match.customEventName">
+                                            <span class="text-[9px] bg-purple-100 text-purple-700 font-extrabold px-1 rounded block mt-0.5" x-text="match.customEventName"></span>
+                                        </template>
+                                        <template x-if="!match.customEventName && match.holidayName">
                                             <span class="text-[9px] bg-rose-100 text-rose-700 font-extrabold px-1 rounded block mt-0.5" x-text="match.holidayName"></span>
                                         </template>
-                                        <template x-if="!match.holidayName && match.isEveHoliday">
+                                        <template x-if="!match.customEventName && !match.holidayName && match.isEveHoliday">
                                             <span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1 rounded block mt-0.5">🌙 假期前夕</span>
                                         </template>
                                     </div>
@@ -693,11 +703,11 @@
         // Firebase Config
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyCFFQ6v_X2O5oOco3DtXRHQyRYPbNpWPXE",
-  authDomain: "fdmeet.firebaseapp.com",
-  projectId: "fdmeet",
-  storageBucket: "fdmeet.firebasestorage.app",
-  messagingSenderId: "818872276812",
-  appId: "1:818872276812:web:d1e8797f7c0f00375c21e9"
+            authDomain: "fdmeet.firebaseapp.com",
+            projectId: "fdmeet",
+            storageBucket: "fdmeet.firebasestorage.app",
+            messagingSenderId: "818872276812",
+            appId: "1:818872276812:web:d1e8797f7c0f00375c21e9"
         };
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'friends-time-sync';
@@ -725,13 +735,19 @@
             // 2026 Holidays
             "2026-01-01": "元旦", "2026-02-17": "農曆年初一", "2026-02-18": "農曆年初二", "2026-02-19": "農曆年初三",
             "2026-04-03": "耶穌受難節", "2026-04-04": "受難節翌日", "2026-04-06": "清明節翌日", "2026-04-07": "復活節翌日",
-            "2026-05-01": "勞動節", "2026-05-25": "佛誕翌日", "2026-06-19": "端午節", "2026-07-01": "特區成立日","2026-09-13": "🎂 Candice 生日",
-            "2026-09-26": "中秋節翌日", "2026-10-01": "國慶日", "2026-10-19": "重陽節翌日", "2026-11-13": "👑 Big Bang 演唱會","2026-12-25": "聖誕節", "2026-12-26": "聖誕節翌日",
+            "2026-05-01": "勞動節", "2026-05-25": "佛誕翌日", "2026-06-19": "端午節", "2026-07-01": "特區成立日",
+            "2026-09-26": "中秋節翌日", "2026-10-01": "國慶日", "2026-10-19": "重陽節翌日", "2026-12-25": "聖誕節", "2026-12-26": "聖誕節翌日",
             // 2027 Holidays
             "2027-01-01": "元旦", "2027-02-06": "農曆年初一", "2027-02-08": "農曆年初三", "2027-02-09": "年初二補假",
             "2027-03-26": "耶穌受難節", "2027-03-27": "受難節翌日", "2027-03-29": "復活節星期一", "2027-04-05": "清明節",
             "2027-05-01": "勞動節", "2027-05-13": "佛誕", "2027-06-09": "端午節", "2027-07-01": "特區成立日",
             "2027-09-16": "中秋節翌日", "2027-10-01": "國慶日", "2027-10-08": "重陽節", "2027-12-25": "聖誕節", "2027-12-27": "聖誕節補假"
+        };
+
+        // 🎂 💜 個人 / 自訂特別日子 Dictionary (紫色高亮專用)
+        const customEvents = {
+            "2026-09-13": "🎂 Candice 生日",
+            "2026-11-13": "👑 Big Bang 演唱會"
         };
 
         function createTimeMatcherApp() {
@@ -1076,10 +1092,11 @@
                                 const isFriday = (dayOfWeek === 5);
                                 const isEve = this.isEveOfHoliday(dateKey);
                                 const isHol = !!hkHolidays[dateKey];
+                                const isCust = !!customEvents[dateKey];
 
-                                // 基礎分數：有空 +2分, 待定 +1分, 星期五/假期前夕 +1.5分 額外加權
+                                // 基礎分數：有空 +2分, 待定 +1分, 星期五/假期前夕/自訂活動 +1.5分 額外加權
                                 let score = (freeCount * 2) + maybeCount;
-                                if (isFriday || isEve || isHol) score += 1.5;
+                                if (isFriday || isEve || isHol || isCust) score += 1.5;
 
                                 matches.push({
                                     dateKey: dateKey,
@@ -1089,6 +1106,7 @@
                                     isFriday: isFriday,
                                     isEveHoliday: isEve,
                                     holidayName: hkHolidays[dateKey] || null,
+                                    customEventName: customEvents[dateKey] || null,
                                     users: this.getActiveUsersForDate(dateKey)
                                 });
                             }
@@ -1154,6 +1172,7 @@
                             isToday: false,
                             isSunday: false,
                             holidayName: null,
+                            customEventName: null,
                             isEveHoliday: false
                         });
                     }
@@ -1169,6 +1188,7 @@
                             isToday: dateKey === todayKey,
                             isSunday: dayOfWeek === 0,
                             holidayName: hkHolidays[dateKey] || null,
+                            customEventName: customEvents[dateKey] || null,
                             isEveHoliday: this.isEveOfHoliday(dateKey)
                         });
                     }
@@ -1183,6 +1203,7 @@
                             isToday: false,
                             isSunday: false,
                             holidayName: null,
+                            customEventName: null,
                             isEveHoliday: false
                         });
                     }
