@@ -526,10 +526,18 @@
                                         <img :src="user.avatar" :title="user.name" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-xs object-cover">
                                     </template>
                                 </div>
-                                <button @click="openEventModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
-                                    <span>🗓️ 定為聚會日</span>
-                                    <i class="fa-solid fa-arrow-right text-[9px]"></i>
-                                </button>
+                                <template x-if="getConfirmedEventForDate(match.dateKey)">
+    <span class="text-amber-600 bg-amber-50 font-black text-xs px-2 py-1 rounded-lg border border-amber-200">
+        ✅ 已敲定：<span x-text="getConfirmedEventForDate(match.dateKey).title"></span>
+    </span>
+</template>
+
+<template x-else>
+    <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
+        <span>🗓️ 定為聚會日</span>
+        <i class="fa-solid fa-arrow-right text-[9px]"></i>
+    </button>
+</template>
                             </div>
                         </div>
                     </template>
