@@ -189,10 +189,22 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
                     <div class="flex items-center justify-between sm:block">
                         <div>
-                            <h2 class="text-lg sm:text-xl font-bold text-slate-900 flex items-center space-x-2">
-                                <span x-text="monthYearString"></span>
+                            <!-- 🗓️ 年份與月份下拉選單 -->
+                            <div class="flex items-center space-x-1.5 mb-1">
+                                <select x-model.number="currentYear" class="bg-slate-100 hover:bg-slate-200 text-slate-900 text-sm sm:text-base font-extrabold px-2 py-1 rounded-xl border border-slate-200 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                                    <template x-for="y in yearOptions" :key="y">
+                                        <option :value="y" x-text="y + ' 年'"></option>
+                                    </template>
+                                </select>
+                                
+                                <select x-model.number="currentMonth" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm sm:text-base font-extrabold px-2 py-1 rounded-xl border border-indigo-200 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                                    <template x-for="(mName, idx) in monthNames" :key="idx">
+                                        <option :value="idx" x-text="mName"></option>
+                                    </template>
+                                </select>
+                                
                                 <span class="text-[10px] sm:text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100 font-bold" x-text="members.length + ' 位成員'"></span>
-                            </h2>
+                            </div>
                             <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">點擊切換：<span class="text-emerald-600 font-bold">🟢 有空</span> ➔ <span class="text-amber-600 font-bold">🟡 待定</span> ➔ <span class="text-rose-600 font-bold">🔴 沒空</span> ➔ <span class="text-slate-400">⚪ 取消</span></p>
                         </div>
 
@@ -227,30 +239,6 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- 🎯 提案一：平日 / 假期前夕 快捷批量按鈕條 (Quick Fill Presets) -->
-                <template x-if="isLoggedIn">
-                    <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                        <div class="text-[11px] font-bold text-indigo-900 flex items-center space-x-1.5">
-                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
-                            <span>個人本月快捷填寫：</span>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
-                            <button @click="batchFillCurrentMonth('friday')" title="全選本月所有星期五" class="flex-1 sm:flex-initial bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-lg transition active:scale-95 shadow-2xs touch-manipulation whitespace-nowrap">
-                                🟢 本月 Friday
-                            </button>
-                            <button @click="batchFillCurrentMonth('holiday_eve')" title="全選公眾假期及假期前夕" class="flex-1 sm:flex-initial bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-lg transition active:scale-95 shadow-2xs touch-manipulation whitespace-nowrap">
-                                🌙 假期及前夕
-                            </button>
-                            <button @click="batchFillCurrentMonth('weekdays')" title="全選一至五" class="flex-1 sm:flex-initial bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-lg transition active:scale-95 shadow-2xs touch-manipulation whitespace-nowrap">
-                                💼 平日 (Mon-Fri)
-                            </button>
-                            <button @click="batchFillCurrentMonth('clear')" title="清空當月標記" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
-                                ⚪ 清空
-                            </button>
-                        </div>
-                    </div>
-                </template>
 
                 <!-- 🌟 Member Avatar Quick Legend & Focus Bar -->
                 <div class="pt-2 sm:pt-3 border-t border-slate-100 flex items-center space-x-1.5 overflow-x-auto custom-scrollbar pb-1 text-xs -mx-1 px-1">
@@ -449,7 +437,7 @@
             
             <div class="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-3 sm:p-4 flex items-center space-x-2.5 text-xs text-indigo-900">
                 <i class="fa-solid fa-shield-halved text-indigo-500 text-sm sm:text-base shrink-0"></i>
-                <p class="text-[11px] sm:text-xs"><strong>專屬群組保護：</strong>管理員已配置白名單存取控制。</p>
+                <p class="text-[11px] sm:text-xs"><strong>專屬群組保護：</strong>管理員 已配置白名單存取控制。</p>
             </div>
         </section>
 
@@ -704,7 +692,7 @@
 
         // Firebase Config
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-           apiKey: "AIzaSyCFFQ6v_X2O5oOco3DtXRHQyRYPbNpWPXE",
+            apiKey: "AIzaSyCFFQ6v_X2O5oOco3DtXRHQyRYPbNpWPXE",
   authDomain: "fdmeet.firebaseapp.com",
   projectId: "fdmeet",
   storageBucket: "fdmeet.firebasestorage.app",
@@ -956,60 +944,6 @@
                     }
                 },
 
-                // 🎯 提案一：批量填寫與清空功能 (Batch Fill Presets)
-                async batchFillCurrentMonth(mode) {
-                    if (!this.isLoggedIn) {
-                        this.loginWithGoogle();
-                        return;
-                    }
-
-                    const year = this.currentYear;
-                    const month = this.currentMonth;
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    const userId = this.currentUser.id;
-
-                    const targetDates = [];
-                    for (let d = 1; d <= daysInMonth; d++) {
-                        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                        const dayOfWeek = new Date(year, month, d).getDay();
-                        const isHol = !!hkHolidays[dateKey];
-                        const isEve = this.isEveOfHoliday(dateKey);
-
-                        if (mode === 'friday' && dayOfWeek === 5) targetDates.push(dateKey);
-                        else if (mode === 'holiday_eve' && (isHol || isEve)) targetDates.push(dateKey);
-                        else if (mode === 'weekdays' && dayOfWeek >= 1 && dayOfWeek <= 5) targetDates.push(dateKey);
-                        else if (mode === 'clear') targetDates.push(dateKey);
-                    }
-
-                    for (const dateKey of targetDates) {
-                        if (!this.availabilityMap[dateKey]) {
-                            this.availabilityMap[dateKey] = {};
-                        }
-
-                        if (mode === 'clear') {
-                            delete this.availabilityMap[dateKey][userId];
-                        } else {
-                            this.availabilityMap[dateKey][userId] = 'free';
-                        }
-
-                        if (this.isFirebaseActive && db) {
-                            try {
-                                const dateDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'schedules', dateKey);
-                                const updateData = {};
-                                updateData[userId] = mode === 'clear' ? deleteField() : 'free';
-                                await setDoc(dateDocRef, updateData, { merge: true });
-                            } catch (err) {
-                                console.error("批量填寫失敗:", err);
-                            }
-                        }
-                    }
-
-                    if (mode === 'friday') this.showToast(`已一鍵將本月所有 🟢 星期五 標記為有空`);
-                    else if (mode === 'holiday_eve') this.showToast(`已一鍵將本月 🟢 公眾假期及假期前夕 標記為有空`);
-                    else if (mode === 'weekdays') this.showToast(`已一鍵將本月 🟢 所有平日 (Mon-Fri) 標記為有空`);
-                    else if (mode === 'clear') this.showToast(`已清空本月的所有標記 ⚪`);
-                },
-
                 // 🔍 成員專屬高亮模式
                 toggleUserFocus(userId) {
                     if (this.focusedUserId === userId) {
@@ -1182,9 +1116,25 @@
                     }
                 },
 
+                get monthNames() {
+                    return ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
+                },
+
                 get monthYearString() {
-                    const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
-                    return `${this.currentYear}年 ${monthNames[this.currentMonth]}`;
+                    return `${this.currentYear}年 ${this.monthNames[this.currentMonth]}`;
+                },
+
+                get yearOptions() {
+                    const baseYear = new Date().getFullYear();
+                    const years = [];
+                    for (let y = baseYear - 1; y <= baseYear + 3; y++) {
+                        years.push(y);
+                    }
+                    if (!years.includes(this.currentYear)) {
+                        years.push(this.currentYear);
+                        years.sort((a, b) => a - b);
+                    }
+                    return years;
                 },
 
                 get calendarDays() {
