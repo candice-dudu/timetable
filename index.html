@@ -145,28 +145,35 @@
         <!-- Left Column: Calendar & Controls -->
         <section class="lg:col-span-8 flex flex-col space-y-3 sm:space-y-4">
             
-            <!-- 🗓️ Confirmed Event Banner -->
-            <template x-if="confirmedEvent && confirmedEvent.dateKey">
-                <div class="bg-gradient-to-r from-amber-500 via-indigo-600 to-violet-600 text-white rounded-2xl p-3.5 sm:p-4 shadow-lg flex items-center justify-between border border-amber-200/30">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-2xl sm:text-3xl shrink-0">🗓️</span>
-                        <div>
-                            <div class="text-[10px] sm:text-xs text-amber-100 font-extrabold uppercase tracking-wider flex items-center space-x-1">
-                                <span>正式敲定聚會日</span>
-                                <span class="bg-amber-400 text-slate-900 text-[9px] px-1.5 py-0.2 rounded-full font-black">已發起</span>
-                            </div>
-                            <div class="text-xs sm:text-base font-black tracking-tight mt-0.5">
-                                <span x-text="formatDateTitle(confirmedEvent.dateKey)" class="underline decoration-amber-300 underline-offset-2"></span>：
-                                「<span x-text="confirmedEvent.title"></span>」
-                                <span class="text-[10px] sm:text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-lg ml-1" x-text="getAvailableCount(confirmedEvent.dateKey) + ' 人有空'"></span>
+            <!-- 🗓️ Confirmed Events List Banner (多次約會模式) -->
+            <template x-if="confirmedEventsList.length > 0">
+                <div class="bg-gradient-to-r from-amber-500 via-indigo-600 to-violet-600 text-white rounded-2xl p-3.5 sm:p-4 shadow-lg flex flex-col space-y-2 border border-amber-200/30">
+                    <div class="flex items-center justify-between border-b border-white/20 pb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xl sm:text-2xl shrink-0">🗓️</span>
+                            <div class="text-xs sm:text-sm font-black tracking-tight">
+                                正式敲定聚會列表 (<span x-text="confirmedEventsList.length"></span> 個約會)
                             </div>
                         </div>
+                        <span class="bg-amber-400 text-slate-900 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-black">多次約會模式</span>
                     </div>
-                    <template x-if="isAdmin">
-                        <button @click="clearConfirmedEvent()" title="取消敲定的聚會" class="text-xs bg-black/20 hover:bg-black/30 active:scale-95 text-white px-2.5 py-1.5 rounded-xl transition font-bold shrink-0 touch-manipulation border border-white/20">
-                            取消聚會
-                        </button>
-                    </template>
+
+                    <div class="space-y-2 max-h-36 overflow-y-auto custom-scrollbar pr-1">
+                        <template x-for="event in confirmedEventsList" :key="event.dateKey">
+                            <div class="flex items-center justify-between bg-white/10 hover:bg-white/20 p-2 rounded-xl transition text-xs">
+                                <div class="flex items-center space-x-2 truncate">
+                                    <span x-text="formatDateTitle(event.dateKey)" class="font-bold underline decoration-amber-300 underline-offset-2 shrink-0"></span>
+                                    <span class="truncate font-semibold">「<span x-text="event.title"></span>」</span>
+                                    <span class="text-[10px] font-semibold bg-white/20 px-1.5 py-0.5 rounded ml-1 shrink-0" x-text="getAvailableCount(event.dateKey) + ' 人有空'"></span>
+                                </div>
+                                <template x-if="isAdmin">
+                                    <button @click="clearConfirmedEvent(event.dateKey)" title="取消此聚會" class="text-[10px] bg-black/20 hover:bg-red-600/80 active:scale-95 text-white px-2 py-1 rounded-lg transition font-bold shrink-0 touch-manipulation border border-white/20 ml-2">
+                                        取消
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
                 </div>
             </template>
 
@@ -311,7 +318,7 @@
                                 'border-purple-300 bg-purple-50/70 hover:border-purple-400': dayObj.inCurrentMonth && dayObj.customEventName,
                                 'border-rose-200 bg-rose-50/30 hover:border-rose-400': dayObj.inCurrentMonth && !dayObj.customEventName && (dayObj.isSunday || dayObj.holidayName),
                                 'ring-2 ring-indigo-600 ring-offset-1': dayObj.isToday && dayObj.inCurrentMonth,
-                                'ring-2 ring-amber-400 bg-amber-50/30': confirmedEvent && confirmedEvent.dateKey === dayObj.dateKey && dayObj.inCurrentMonth,
+                                'ring-2 ring-amber-400 bg-amber-50/30': getConfirmedEventForDate(dayObj.dateKey) && dayObj.inCurrentMonth,
                                 'opacity-30 bg-slate-100/50': focusedUserId && dayObj.inCurrentMonth && !getUserStatus(dayObj.dateKey, focusedUserId),
                                 'ring-2 ring-emerald-500 bg-emerald-50/20': focusedUserId && dayObj.inCurrentMonth && getUserStatus(dayObj.dateKey, focusedUserId) === 'free',
                                 'ring-2 ring-amber-500 bg-amber-50/20': focusedUserId && dayObj.inCurrentMonth && getUserStatus(dayObj.dateKey, focusedUserId) === 'maybe',
@@ -366,11 +373,11 @@
                                 </template>
                             </div>
 
-                            <!-- 🗓️ Confirmed Event Badge -->
-                            <template x-if="confirmedEvent && confirmedEvent.dateKey === dayObj.dateKey && dayObj.inCurrentMonth">
+                            <!-- 🗓️ Confirmed Event Badge (多次約會模式) -->
+                            <template x-if="getConfirmedEventForDate(dayObj.dateKey) && dayObj.inCurrentMonth">
                                 <div class="my-0.5 bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs">
                                     <span>🗓️</span>
-                                    <span class="truncate" x-text="confirmedEvent.title"></span>
+                                    <span class="truncate" x-text="getConfirmedEventForDate(dayObj.dateKey).title"></span>
                                 </div>
                             </template>
 
@@ -787,7 +794,8 @@
                 
                 // Firestore schedule structure: { "2026-09-15": { "uid123": "free", "uid456": "maybe", "uid789": "busy" } }
                 availabilityMap: {},
-                confirmedEvent: null,
+                // 多次約會模式：儲存格式為 { "2026-09-15": { title: '週末燒烤', dateKey: '2026-09-15', createdByName: 'Alex' }, ... }
+                confirmedEvents: {},
                 focusedUserId: null, // 🔍 Member Focus Mode ID
                 bestMatchMode: 'month', // 🎛️ 方案 B 模式: 'month' (本月) 或 'all' (全域未來)
 
@@ -809,6 +817,16 @@
                     return this.currentUser.email.toLowerCase() === this.adminEmail.toLowerCase();
                 },
 
+                get confirmedEventsList() {
+                    const list = Object.values(this.confirmedEvents).filter(e => e && e.dateKey);
+                    return list.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+                },
+
+                getConfirmedEventForDate(dateKey) {
+                    if (!dateKey) return null;
+                    return this.confirmedEvents[dateKey] || null;
+                },
+
                 initApp() {
                     if (this.isFirebaseActive && auth && db) {
                         this.setupFirebaseListeners();
@@ -828,13 +846,21 @@
                         }
                     });
 
-                    // 2. Listen to Confirmed Event
+                    // 2. Listen to Confirmed Events Map (多次約會模式)
                     const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
                     onSnapshot(eventRef, (docSnap) => {
-                        if (docSnap.exists() && docSnap.data().dateKey) {
-                            this.confirmedEvent = docSnap.data();
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            if (data.eventsMap) {
+                                this.confirmedEvents = data.eventsMap;
+                            } else if (data.dateKey) {
+                                // 兼容極舊單一約會結構
+                                this.confirmedEvents = { [data.dateKey]: data };
+                            } else {
+                                this.confirmedEvents = {};
+                            }
                         } else {
-                            this.confirmedEvent = null;
+                            this.confirmedEvents = {};
                         }
                     });
 
@@ -1268,9 +1294,15 @@
 
                 openEventModal(dateKey) {
                     this.selectedDateKey = dateKey;
+                    if (this.confirmedEvents[dateKey]) {
+                        this.eventTitle = this.confirmedEvents[dateKey].title || '週末燒烤';
+                    } else {
+                        this.eventTitle = '週末燒烤';
+                    }
                     this.showEventModal = true;
                 },
 
+                // 🗓️ 多次約會模式發起聚會
                 async confirmEvent() {
                     if (!this.selectedDateKey) return;
                     const title = this.eventTitle.trim() || '聚會';
@@ -1282,13 +1314,15 @@
                         updatedAt: new Date().toISOString()
                     };
 
-                    this.confirmedEvent = eventObj;
+                    this.confirmedEvents[this.selectedDateKey] = eventObj;
                     this.showEventModal = false;
 
                     if (this.isFirebaseActive && db) {
                         try {
                             const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
-                            await setDoc(eventRef, eventObj);
+                            const updateData = {};
+                            updateData[`eventsMap.${this.selectedDateKey}`] = eventObj;
+                            await setDoc(eventRef, updateData, { merge: true });
                         } catch (err) {
                             console.error("寫入聚會活動失敗:", err);
                         }
@@ -1297,20 +1331,27 @@
                     this.showToast(`🗓️ 已為 ${this.formatDateTitle(this.selectedDateKey)} 成功發起「${title}」！`);
                 },
 
-                async clearConfirmedEvent() {
+                // 🗓️ 取消特定日期的聚會 (多次約會模式)
+                async clearConfirmedEvent(targetDateKey = null) {
                     if (!this.isAdmin) return;
-                    this.confirmedEvent = null;
+                    const keyToRemove = targetDateKey || this.selectedDateKey;
+                    if (!keyToRemove) return;
+
+                    delete this.confirmedEvents[keyToRemove];
+                    this.confirmedEvents = { ...this.confirmedEvents };
 
                     if (this.isFirebaseActive && db) {
                         try {
                             const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
-                            await setDoc(eventRef, { dateKey: null, title: '' });
+                            const updateData = {};
+                            updateData[`eventsMap.${keyToRemove}`] = deleteField();
+                            await setDoc(eventRef, updateData, { merge: true });
                         } catch (err) {
                             console.error("取消聚會失敗:", err);
                         }
                     }
 
-                    this.showToast('已取消已敲定的聚會');
+                    this.showToast(`已取消 ${this.formatDateTitle(keyToRemove)} 的聚會`);
                 },
 
                 copyShareLink() {
