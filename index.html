@@ -956,9 +956,13 @@
                                 cloudEvents = { [legacyId]: data };
                             }
 
-                            // Firestore 是活動的唯一資料來源；頂部、月曆、排行榜只讀取這份資料。
+                            // Firestore 是活動的唯一資料來源；另外使用 cancelledEventIds 作為取消紀錄。
+                            // 這能防止舊版程式或其他裝置把已取消的活動重新寫回 eventsMap 後再次顯示。
+                            const cancelledEventIds = new Set(Array.isArray(data.cancelledEventIds) ? data.cancelledEventIds : []);
                             this.confirmedEvents = Object.fromEntries(
-                                Object.entries(cloudEvents).filter(([id, e]) => e && e.id && e.status !== 'cancelled')
+                                Object.entries(cloudEvents).filter(([id, e]) =>
+                                    e && e.id && e.status !== 'cancelled' && !cancelledEventIds.has(id)
+                                )
                             );
                         }
                     });
@@ -1429,13 +1433,23 @@
                         const data = snap.exists() ? snap.data() : {};
                         const latestMap = (data.eventsMap && typeof data.eventsMap === 'object') ? { ...data.eventsMap } : {};
 
+                        const existingCancelled = Array.isArray(data.cancelledEventIds) ? data.cancelledEventIds : [];
+                        const cancelledSet = new Set(existingCancelled);
+
                         if (operation === 'delete') {
                             delete latestMap[eventId];
+                            // 保留取消 tombstone，避免舊版程式/其他裝置把舊 eventsMap 寫回後活動復活。
+                            cancelledSet.add(eventId);
                         } else if (operation === 'set' && eventObj) {
                             latestMap[eventId] = eventObj;
+                            // 明確重新建立/儲存此活動時，才解除它的取消標記。
+                            cancelledSet.delete(eventId);
                         }
 
-                        transaction.set(eventRef, { eventsMap: latestMap }, { merge: true });
+                        transaction.set(eventRef, {
+                            eventsMap: latestMap,
+                            cancelledEventIds: Array.from(cancelledSet)
+                        }, { merge: true });
                     });
                 },
 
