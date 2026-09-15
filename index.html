@@ -365,19 +365,12 @@
                             <!-- 🗓️/✈️ Confirmed Event Badge -->
                             <template x-if="dayObj.inCurrentMonth">
                                 <div>
-                                    <!-- 單天聚會標籤 -->
-                                    <template x-if="getConfirmedEventForDate(dayObj.dateKey) && !isMultiDayEventDate(dayObj.dateKey)">
-                                        <div class="my-0.5 bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs">
-                                            <span x-text="getConfirmedEventForDate(dayObj.dateKey).status === 'tentative' ? '⏳' : '🗓️'"></span>
-                                            <span class="truncate" x-text="getConfirmedEventForDate(dayObj.dateKey).title"></span>
-                                        </div>
-                                    </template>
-
-                                    <!-- 多天旅行/活動標籤 -->
-                                    <template x-if="getMultiDayEventInfo(dayObj.dateKey)">
-                                        <div class="my-0.5 bg-purple-600 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs">
-                                            <span>✈️</span>
-                                            <span class="truncate" x-text="getMultiDayEventInfo(dayObj.dateKey)"></span>
+                                    <!-- 所有活動標籤：同一天可同時顯示多個活動 -->
+                                    <template x-for="event in getEventsForDate(dayObj.dateKey)" :key="event.id">
+                                        <div class="my-0.5 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs"
+                                             :class="event.isMultiDay ? 'bg-purple-600' : 'bg-gradient-to-r from-amber-500 to-indigo-600'">
+                                            <span x-text="event.isMultiDay ? '✈️' : (event.status === 'tentative' ? '⏳' : '🗓️')"></span>
+                                            <span class="truncate" x-text="event.isMultiDay && dayObj.dateKey === (event.startDate || event.dateKey) ? event.title + ' (Day 1)' : event.title"></span>
                                         </div>
                                     </template>
                                 </div>
@@ -519,14 +512,15 @@
                                     </template>
                                 </div>
                                 
-                                <template x-if="getConfirmedEventForDate(match.dateKey)">
-                                    <span class="text-amber-600 bg-amber-50 font-black text-xs px-2 py-1 rounded-lg border border-amber-200">
-                                        <span x-text="getConfirmedEventForDate(match.dateKey).status === 'tentative' ? '⏳ 暫定：' : '✅ 已敲定：'"></span>
-                                        <span x-text="getConfirmedEventForDate(match.dateKey).title"></span>
-                                    </span>
+                                <template x-if="getEventsForDate(match.dateKey).length > 0">
+                                    <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-amber-600 hover:text-amber-800 font-black text-xs flex items-center space-x-1 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation border border-amber-200">
+                                        <span>🗓️</span>
+                                        <span class="truncate max-w-[120px]" x-text="getEventsForDate(match.dateKey).map(e => (e.status === 'tentative' ? '⏳ ' : '✅ ') + e.title).join('、')"></span>
+                                        <i class="fa-solid fa-arrow-right text-[9px] shrink-0"></i>
+                                    </button>
                                 </template>
 
-                                <template x-if="!getConfirmedEventForDate(match.dateKey)">
+                                <template x-if="getEventsForDate(match.dateKey).length === 0">
                                     <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
                                         <span>🗓️ 定為聚會日</span>
                                         <i class="fa-solid fa-arrow-right text-[9px]"></i>
@@ -864,43 +858,45 @@
                 },
 
                 // 修改演算法，正確抓取單日與多日約會
+                // 取得指定日期的所有活動；支援同一天多個活動及多天活動重疊
+                getEventsForDate(dateKey) {
+                    if (!dateKey || !this.confirmedEvents) return [];
+                    return Object.values(this.confirmedEvents)
+                        .filter(e => {
+                            if (!e) return false;
+                            const start = e.startDate || e.dateKey;
+                            const end = e.endDate || start;
+                            return start && end && dateKey >= start && dateKey <= end;
+                        })
+                        .sort((a, b) => {
+                            const startA = a.startDate || a.dateKey || '';
+                            const startB = b.startDate || b.dateKey || '';
+                            return startA.localeCompare(startB) || String(a.id || '').localeCompare(String(b.id || ''));
+                        });
+                },
+
+                // 保留原有單一活動 API，其他功能仍可使用；只取該日期第一個活動
                 getConfirmedEventForDate(dateKey) {
-                    if (!dateKey || !this.confirmedEvents) return null;
-                    return Object.values(this.confirmedEvents).find(e => {
-                        if (!e) return false;
-                        const start = e.startDate || e.dateKey;
-                        const end = e.endDate || start;
-                        return dateKey >= start && dateKey <= end;
-                    }) || null;
+                    return this.getEventsForDate(dateKey)[0] || null;
                 },
 
                 isMultiDayEventDate(dateKey) {
-                    if (!dateKey || !this.confirmedEvents) return false;
-                    return Object.values(this.confirmedEvents).some(e => {
-                        if (e && e.isMultiDay) {
-                            const start = e.startDate || e.dateKey;
-                            const end = e.endDate || start;
-                            return start && end && start !== end && dateKey >= start && dateKey <= end;
-                        }
-                        return false;
+                    return this.getEventsForDate(dateKey).some(e => {
+                        const start = e.startDate || e.dateKey;
+                        const end = e.endDate || start;
+                        return !!e.isMultiDay && start && end && start !== end;
                     });
                 },
 
                 getMultiDayEventInfo(dateKey) {
-                    if (!dateKey || !this.confirmedEvents) return null;
-                    for (const e of Object.values(this.confirmedEvents)) {
-                        if (e && e.isMultiDay) {
-                            const start = e.startDate || e.dateKey;
-                            const end = e.endDate || start;
-                            if (start && end && start !== end && dateKey >= start && dateKey <= end) {
-                                if (dateKey === start) {
-                                    return `${e.title} (Day 1)`;
-                                }
-                                return e.title;
-                            }
-                        }
-                    }
-                    return null;
+                    const event = this.getEventsForDate(dateKey).find(e => {
+                        const start = e.startDate || e.dateKey;
+                        const end = e.endDate || start;
+                        return !!e.isMultiDay && start && end && start !== end;
+                    });
+                    if (!event) return null;
+                    const start = event.startDate || event.dateKey;
+                    return dateKey === start ? `${event.title} (Day 1)` : event.title;
                 },
 
                 formatEventDateRange(event) {
