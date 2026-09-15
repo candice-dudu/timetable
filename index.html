@@ -156,7 +156,7 @@
 
                     <div class="space-y-2 max-h-36 overflow-y-auto custom-scrollbar pr-1">
                         <template x-for="event in confirmedEventsList" :key="event.id">
-                            <div class="flex items-center justify-between bg-white/10 hover:bg-white/20 p-2 rounded-xl transition text-xs">
+                            <button type="button" @click="jumpToDateAndOpenModal(event.startDate || event.dateKey)" class="w-full text-left flex items-center justify-between bg-white/10 hover:bg-white/20 p-2 rounded-xl transition text-xs cursor-pointer">
                                 <div class="flex items-center space-x-1.5 truncate">
                                     <span :class="event.status === 'confirmed' ? 'bg-emerald-400 text-slate-900' : 'bg-amber-300 text-slate-900'"
                                           class="text-[9px] font-black px-1.5 py-0.2 rounded-md shrink-0"
@@ -170,7 +170,7 @@
                                     </span>
                                 </div>
 
-                            </div>
+                            </button>
                         </template>
                     </div>
                 </div>
@@ -586,9 +586,14 @@
 
     <!-- Event Manager Modal：活動只在右側排行榜進入後管理；頂部與月曆僅負責顯示 -->
     <div x-show="showEventModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
-        <div @click.outside="showEventModal = false" class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg sm:text-xl font-bold mb-3 sm:mb-4">
-                <span>🗓️</span>
+        <div @click.outside="showEventModal = false" @keydown.escape.window="showEventModal = false" class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between mb-3 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg sm:text-xl font-bold">
+                    <span>🗓️</span>
+                </div>
+                <button type="button" @click="showEventModal = false" aria-label="關閉活動管理視窗" class="w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition flex items-center justify-center text-lg font-bold">
+                    ×
+                </button>
             </div>
             <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-0.5">活動管理</h3>
             <p class="text-xs text-slate-500 mb-4">日期：<strong class="text-indigo-600" x-text="formatDateTitle(selectedDateKey)"></strong></p>
@@ -763,7 +768,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase Config
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
@@ -1413,11 +1418,25 @@
                     this.eventManagerMode = 'edit';
                 },
 
-                async writeEventsMap(nextMap) {
+                async updateEventInFirebase(operation, eventId, eventObj = null) {
                     if (!this.isFirebaseActive || !db) return;
                     const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
-                    // 活動資料集中在單一文件；整張 map 寫回，避免動態 nested field deletion 的問題。
-                    await setDoc(eventRef, { eventsMap: nextMap }, { merge: true });
+
+                    // 每次只對「這一個活動」做原子操作，避免不同用戶同時操作時，
+                    // 一方的舊 eventsMap 把另一方剛取消的活動重新寫回去。
+                    await runTransaction(db, async (transaction) => {
+                        const snap = await transaction.get(eventRef);
+                        const data = snap.exists() ? snap.data() : {};
+                        const latestMap = (data.eventsMap && typeof data.eventsMap === 'object') ? { ...data.eventsMap } : {};
+
+                        if (operation === 'delete') {
+                            delete latestMap[eventId];
+                        } else if (operation === 'set' && eventObj) {
+                            latestMap[eventId] = eventObj;
+                        }
+
+                        transaction.set(eventRef, { eventsMap: latestMap }, { merge: true });
+                    });
                 },
 
                 async saveEventFromManager() {
@@ -1445,8 +1464,8 @@
 
                     try {
                         const wasEditing = !!this.editingEventId;
-                        await this.writeEventsMap(current);
-                        this.confirmedEvents = current;
+                        await this.updateEventInFirebase('set', eventId, eventObj);
+                        this.confirmedEvents = { ...(this.confirmedEvents || {}), [eventId]: eventObj };
                         this.editingEventId = null;
                         this.eventManagerMode = 'manage';
                         this.showToast(wasEditing ? `已更新「${title}」` : `已成功建立「${title}」`);
@@ -1466,7 +1485,7 @@
                     delete nextMap[targetId];
 
                     try {
-                        await this.writeEventsMap(nextMap);
+                        await this.updateEventInFirebase('delete', targetId);
                         this.confirmedEvents = nextMap;
                         const remaining = this.getEventsForDate(this.selectedDateKey);
                         this.eventManagerMode = remaining.length > 0 ? 'manage' : 'create';
