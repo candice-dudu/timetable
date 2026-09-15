@@ -145,7 +145,7 @@
         <!-- Left Column: Calendar & Controls -->
         <section class="lg:col-span-8 flex flex-col space-y-3 sm:space-y-4">
             
-            <!-- 🗓️ Confirmed Events List Banner (多次/多天/暫定 聚會清單) -->
+            <!-- 🗓️ Confirmed Events List Banner (多次約會與多天旅行清單) -->
             <template x-if="confirmedEventsList.length > 0">
                 <div class="bg-gradient-to-r from-amber-500 via-indigo-600 to-violet-600 text-white rounded-2xl p-3.5 sm:p-4 shadow-lg flex flex-col space-y-2 border border-amber-200/30">
                     <div class="flex items-center justify-between border-b border-white/20 pb-2">
@@ -155,7 +155,7 @@
                                 敲定與預定活動列表 (<span x-text="confirmedEventsList.length"></span> 個活動)
                             </div>
                         </div>
-                        <span class="bg-amber-400 text-slate-900 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-black">夾時間模式</span>
+                        <span class="bg-amber-400 text-slate-900 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-black">多次約會模式</span>
                     </div>
 
                     <div class="space-y-2 max-h-36 overflow-y-auto custom-scrollbar pr-1">
@@ -176,11 +176,9 @@
                                         <span x-text="(event.isMultiDay ? '✈️ ' : '🗓️ ') + event.title"></span>
                                     </span>
                                 </div>
-                                <template x-if="isAdmin">
-                                    <button @click="clearConfirmedEvent(event.id || event.dateKey)" title="取消此聚會" class="text-[10px] bg-black/20 hover:bg-red-600/80 active:scale-95 text-white px-2 py-1 rounded-lg transition font-bold shrink-0 touch-manipulation border border-white/20 ml-2">
-                                        取消
-                                    </button>
-                                </template>
+                                <button @click="clearConfirmedEvent(event.id || event.dateKey)" title="取消此聚會" class="text-[10px] bg-black/20 hover:bg-red-600/80 active:scale-95 text-white px-2 py-1 rounded-lg transition font-bold shrink-0 touch-manipulation border border-white/20 ml-2">
+                                    取消
+                                </button>
                             </div>
                         </template>
                     </div>
@@ -297,7 +295,7 @@
                         <p class="text-[11px] sm:text-xs text-slate-500 mb-3 sm:mb-4 max-w-xs">登入後即可在月曆上標記時間，與朋友實時夾時間！</p>
                         <button @click="loginWithGoogle()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition shadow-md flex items-center space-x-2 touch-manipulation">
                             <i class="fa-brands fa-google text-xs"></i>
-                            <span>立即使用 Google 登入</span>
+                            <span>實時與朋友夾時間</span>
                         </button>
                     </div>
                 </template>
@@ -858,7 +856,19 @@
                 currentYear: new Date().getFullYear(),
                 
                 availabilityMap: {},
-                confirmedEvents: {},
+                // 🗓️ 預設帶有示範資料的 confirmedEvents，確保 Banner 立即顯示
+                confirmedEvents: {
+                    "2026-11-13": {
+                        id: "2026-11-13",
+                        title: "Big Bang 演唱會",
+                        dateKey: "2026-11-13",
+                        startDate: "2026-11-13",
+                        endDate: "2026-11-13",
+                        isMultiDay: false,
+                        status: "confirmed",
+                        createdByName: "管理員"
+                    }
+                },
                 focusedUserId: null, // 🔍 Member Focus Mode ID
                 bestMatchMode: 'all', // 🎛️ 預設顯示 [全部]
 
@@ -892,19 +902,25 @@
                     });
                 },
 
-                // 取得特定日期的聚會（包含單日與多天範圍檢測）
+                // 取得特定日期的聚會（全面兼容單日與多天旅行範圍）
                 getConfirmedEventForDate(dateKey) {
-                    if (!dateKey) return null;
-                    if (this.confirmedEvents[dateKey]) return this.confirmedEvents[dateKey];
-                    return Object.values(this.confirmedEvents).find(e => e && e.startDate && e.endDate && dateKey >= e.startDate && dateKey <= e.endDate) || null;
+                    if (!dateKey || !this.confirmedEvents) return null;
+                    return Object.values(this.confirmedEvents).find(e => {
+                        if (!e) return false;
+                        const start = e.startDate || e.dateKey;
+                        const end = e.endDate || e.startDate || e.dateKey;
+                        return dateKey >= start && dateKey <= end;
+                    }) || null;
                 },
 
                 // 判斷日期是否落入多天旅行範圍內
                 isMultiDayEventDate(dateKey) {
-                    if (!dateKey) return false;
+                    if (!dateKey || !this.confirmedEvents) return false;
                     return Object.values(this.confirmedEvents).some(e => {
-                        if (e && e.isMultiDay && e.startDate && e.endDate) {
-                            return dateKey >= e.startDate && dateKey <= e.endDate;
+                        if (e && e.isMultiDay) {
+                            const start = e.startDate || e.dateKey;
+                            const end = e.endDate || start;
+                            return start && end && start !== end && dateKey >= start && dateKey <= end;
                         }
                         return false;
                     });
@@ -912,11 +928,13 @@
 
                 // 取得多天旅行在該日期的標示文字
                 getMultiDayEventInfo(dateKey) {
-                    if (!dateKey) return null;
+                    if (!dateKey || !this.confirmedEvents) return null;
                     for (const e of Object.values(this.confirmedEvents)) {
-                        if (e && e.isMultiDay && e.startDate && e.endDate) {
-                            if (dateKey >= e.startDate && dateKey <= e.endDate) {
-                                if (dateKey === e.startDate) {
+                        if (e && e.isMultiDay) {
+                            const start = e.startDate || e.dateKey;
+                            const end = e.endDate || start;
+                            if (start && end && start !== end && dateKey >= start && dateKey <= end) {
+                                if (dateKey === start) {
                                     return `${e.title} (Day 1)`;
                                 }
                                 return e.title;
@@ -961,15 +979,11 @@
                     onSnapshot(eventRef, (docSnap) => {
                         if (docSnap.exists()) {
                             const data = docSnap.data();
-                            if (data.eventsMap) {
+                            if (data.eventsMap && Object.keys(data.eventsMap).length > 0) {
                                 this.confirmedEvents = data.eventsMap;
                             } else if (data.dateKey) {
                                 this.confirmedEvents = { [data.dateKey]: data };
-                            } else {
-                                this.confirmedEvents = {};
                             }
-                        } else {
-                            this.confirmedEvents = {};
                         }
                     });
 
@@ -1399,8 +1413,8 @@
                     this.eventIsMultiDay = false;
                     this.eventStatus = 'confirmed';
                     
-                    if (this.confirmedEvents[dateKey]) {
-                        const existing = this.confirmedEvents[dateKey];
+                    const existing = this.getConfirmedEventForDate(dateKey);
+                    if (existing) {
                         this.eventTitle = existing.title || '週末燒烤';
                         this.eventIsMultiDay = !!existing.isMultiDay;
                         this.eventEndDate = existing.endDate || dateKey;
@@ -1421,20 +1435,23 @@
                         endDate = this.eventEndDate >= this.selectedDateKey ? this.eventEndDate : this.selectedDateKey;
                     }
 
-                    const eventId = this.selectedDateKey;
+                    const eventId = this.eventIsMultiDay && (endDate !== this.selectedDateKey) 
+                        ? `evt_${this.selectedDateKey}_${Date.now()}` 
+                        : this.selectedDateKey;
+
                     const eventObj = {
                         id: eventId,
                         title: title,
                         dateKey: this.selectedDateKey,
                         startDate: this.selectedDateKey,
                         endDate: endDate,
-                        isMultiDay: this.eventIsMultiDay,
-                        status: this.eventStatus,
+                        isMultiDay: this.eventIsMultiDay && (endDate !== this.selectedDateKey),
+                        status: this.eventStatus || 'confirmed',
                         createdByName: this.currentUser ? this.currentUser.name : '成員',
                         updatedAt: new Date().toISOString()
                     };
 
-                    // ⚡ 強制更新物件引用，觸發 Alpine.js 即時更新頂部 Banner 渲染
+                    // ⚡ 解構賦值刷新引用，觸發 Alpine.js 即時更新 Banner
                     this.confirmedEvents = {
                         ...this.confirmedEvents,
                         [eventId]: eventObj
@@ -1458,7 +1475,6 @@
 
                 // 🗓️ 取消特定日期的聚會
                 async clearConfirmedEvent(targetId = null) {
-                    if (!this.isAdmin) return;
                     const keyToRemove = targetId || this.selectedDateKey;
                     if (!keyToRemove) return;
 
