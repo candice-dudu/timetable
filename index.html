@@ -58,7 +58,6 @@
     <!-- Top Navigation Header -->
     <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
-            <!-- App Logo & Title -->
             <div class="flex items-center space-x-2.5">
                 <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 shrink-0">
                     <i class="fa-solid font-bold fa-calendar-check text-lg sm:text-xl"></i>
@@ -68,7 +67,6 @@
                 </div>
             </div>
 
-            <!-- Google Auth Status / User Profile Menu -->
             <div class="flex items-center space-x-2 sm:space-x-3">
                 <template x-if="!isLoggedIn">
                     <button @click="loginWithGoogle()" class="flex items-center space-x-1.5 sm:space-x-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-3 py-2 sm:px-4 sm:py-2 rounded-xl transition shadow-xs">
@@ -139,13 +137,11 @@
         </div>
     </header>
 
-    <!-- Main App Container -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-3 sm:py-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         
-        <!-- Left Column: Calendar & Controls -->
         <section class="lg:col-span-8 flex flex-col space-y-3 sm:space-y-4">
             
-            <!-- 🗓️ Confirmed Events List Banner (多次約會與多天旅行清單) -->
+            <!-- 🗓️ 置頂活動區塊 (動態響應) -->
             <template x-if="confirmedEventsList.length > 0">
                 <div class="bg-gradient-to-r from-amber-500 via-indigo-600 to-violet-600 text-white rounded-2xl p-3.5 sm:p-4 shadow-lg flex flex-col space-y-2 border border-amber-200/30">
                     <div class="flex items-center justify-between border-b border-white/20 pb-2">
@@ -155,28 +151,25 @@
                                 敲定與預定活動列表 (<span x-text="confirmedEventsList.length"></span> 個活動)
                             </div>
                         </div>
-                        <span class="bg-amber-400 text-slate-900 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-black">多次約會模式</span>
+                        <span class="bg-amber-400 text-slate-900 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-black">夾時間模式</span>
                     </div>
 
                     <div class="space-y-2 max-h-36 overflow-y-auto custom-scrollbar pr-1">
-                        <template x-for="event in confirmedEventsList" :key="event.id || event.dateKey">
+                        <template x-for="event in confirmedEventsList" :key="event.id">
                             <div class="flex items-center justify-between bg-white/10 hover:bg-white/20 p-2 rounded-xl transition text-xs">
                                 <div class="flex items-center space-x-1.5 truncate">
-                                    <!-- 狀態 Badge -->
                                     <span :class="event.status === 'confirmed' ? 'bg-emerald-400 text-slate-900' : 'bg-amber-300 text-slate-900'"
                                           class="text-[9px] font-black px-1.5 py-0.2 rounded-md shrink-0"
                                           x-text="event.status === 'confirmed' ? '正式' : '⏳ 暫定'"></span>
 
-                                    <!-- 日期標示 [ 11月13日 - 11月17日 ] -->
                                     <span class="font-bold underline decoration-amber-300 underline-offset-2 shrink-0" 
                                           x-text="formatEventDateRange(event)"></span>
 
-                                    <!-- 活動名稱與圖標 -->
                                     <span class="truncate font-semibold">
                                         <span x-text="(event.isMultiDay ? '✈️ ' : '🗓️ ') + event.title"></span>
                                     </span>
                                 </div>
-                                <button @click="clearConfirmedEvent(event.id || event.dateKey)" title="取消此聚會" class="text-[10px] bg-black/20 hover:bg-red-600/80 active:scale-95 text-white px-2 py-1 rounded-lg transition font-bold shrink-0 touch-manipulation border border-white/20 ml-2">
+                                <button @click="clearConfirmedEvent(event.id)" title="取消此聚會" class="text-[10px] bg-black/20 hover:bg-red-600/80 active:scale-95 text-white px-2 py-1 rounded-lg transition font-bold shrink-0 touch-manipulation border border-white/20 ml-2">
                                     取消
                                 </button>
                             </div>
@@ -199,12 +192,11 @@
                 </div>
             </template>
 
-            <!-- Calendar Navigation & Presets Card -->
+            <!-- Calendar Navigation -->
             <div class="bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
                     <div class="flex items-center justify-between sm:block">
                         <div>
-                            <!-- 🗓️ 年份與月份下拉選單 -->
                             <div class="flex items-center space-x-1.5 mb-1">
                                 <select x-model.number="currentYear" class="bg-slate-100 hover:bg-slate-200 text-slate-900 text-sm sm:text-base font-extrabold px-2 py-1 rounded-xl border border-slate-200 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500 transition">
                                     <template x-for="y in yearOptions" :key="y">
@@ -223,7 +215,6 @@
                             <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">點擊切換：<span class="text-emerald-600 font-bold">🟢 有空</span> ➔ <span class="text-amber-600 font-bold">🟡 待定</span> ➔ <span class="text-rose-600 font-bold">🔴 沒空</span> ➔ <span class="text-slate-400">⚪ 取消</span></p>
                         </div>
 
-                        <!-- Status legend bar -->
                         <div class="flex items-center space-x-1.5 bg-slate-50 p-1.5 rounded-lg border border-slate-100 text-[10px] sm:text-xs">
                             <span class="flex items-center space-x-1 text-emerald-700 font-bold">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -255,7 +246,6 @@
                     </div>
                 </div>
 
-                <!-- 🌟 Member Avatar Quick Legend & Focus Bar -->
                 <div class="pt-2 sm:pt-3 border-t border-slate-100 flex items-center space-x-1.5 overflow-x-auto custom-scrollbar pb-1 text-xs -mx-1 px-1">
                     <span class="text-slate-400 font-bold text-[10px] sm:text-[11px] whitespace-nowrap flex items-center space-x-1 shrink-0">
                         <i class="fa-solid fa-users text-indigo-500"></i>
@@ -271,9 +261,6 @@
                                     class="flex items-center space-x-1 px-2 py-0.5 sm:py-1 rounded-full border transition whitespace-nowrap touch-manipulation">
                                 <img :src="member.avatar" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-white object-cover">
                                 <span x-text="member.name" class="font-bold text-[10px] sm:text-[11px]"></span>
-                                <template x-if="currentUser && currentUser.id === member.id">
-                                    <span class="text-[8px] sm:text-[9px] bg-indigo-100 text-indigo-700 px-1 rounded font-extrabold" :class="focusedUserId === member.id ? 'bg-white/20 text-white' : ''">你</span>
-                                </template>
                             </button>
                         </template>
                         <template x-if="members.length === 0">
@@ -295,12 +282,11 @@
                         <p class="text-[11px] sm:text-xs text-slate-500 mb-3 sm:mb-4 max-w-xs">登入後即可在月曆上標記時間，與朋友實時夾時間！</p>
                         <button @click="loginWithGoogle()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition shadow-md flex items-center space-x-2 touch-manipulation">
                             <i class="fa-brands fa-google text-xs"></i>
-                            <span>實時與朋友夾時間</span>
+                            <span>立即使用 Google 登入</span>
                         </button>
                     </div>
                 </template>
 
-                <!-- Day Names Header (Sunday with Highlighted Red Color) -->
                 <div class="grid grid-cols-7 gap-1 text-center text-[11px] sm:text-xs font-extrabold mb-1.5 sm:mb-2">
                     <div class="text-rose-600 bg-rose-50/60 py-1 rounded-lg">日</div>
                     <div class="text-slate-500 py-1">一</div>
@@ -311,7 +297,6 @@
                     <div class="text-indigo-600 bg-indigo-50/50 py-1 rounded-lg">六</div>
                 </div>
 
-                <!-- Calendar Days Grid -->
                 <div class="grid grid-cols-7 gap-1 sm:gap-2 flex-1 auto-rows-fr">
                     <template x-for="(dayObj, index) in calendarDays" :key="index">
                         <div 
@@ -336,7 +321,6 @@
                             class="relative min-h-[70px] xs:min-h-[78px] sm:min-h-[105px] border rounded-xl sm:rounded-2xl p-1 sm:p-1.5 flex flex-col justify-between transition-all duration-100 cursor-pointer group shadow-2xs hover:shadow-md touch-manipulation"
                             @click="dayObj.inCurrentMonth && toggleAvailability(dayObj.dateKey)">
                             
-                            <!-- Top Date Bar -->
                             <div class="flex items-start justify-between leading-none">
                                 <div class="flex flex-col">
                                     <span 
@@ -350,23 +334,19 @@
                                         class="text-[11px] xs:text-xs sm:text-sm" x-text="dayObj.dayNum">
                                     </span>
                                     
-                                    <!-- 🎂 自訂活動 / 生日標籤 (紫色高亮) -->
                                     <template x-if="dayObj.inCurrentMonth && dayObj.customEventName">
                                         <span class="text-[8px] xs:text-[9px] text-purple-700 bg-purple-100 font-black truncate max-w-[48px] xs:max-w-[65px] sm:max-w-[85px] leading-tight mt-0.5 px-1 rounded" x-text="dayObj.customEventName"></span>
                                     </template>
 
-                                    <!-- 🇭🇰 香港公眾假期標籤 (紅色高亮) -->
                                     <template x-if="dayObj.inCurrentMonth && !dayObj.customEventName && dayObj.holidayName">
                                         <span class="text-[8px] xs:text-[9px] text-rose-600 font-black truncate max-w-[48px] xs:max-w-[65px] sm:max-w-[85px] leading-tight mt-0.5" x-text="dayObj.holidayName"></span>
                                     </template>
                                     
-                                    <!-- 🌙 Eve of Holiday Tag -->
                                     <template x-if="dayObj.inCurrentMonth && !dayObj.holidayName && !dayObj.customEventName && dayObj.isEveHoliday">
                                         <span class="text-[8px] xs:text-[9px] text-amber-600 font-bold truncate max-w-[48px] xs:max-w-[65px] sm:max-w-[85px] leading-tight mt-0.5">🌙 假期前夕</span>
                                     </template>
                                 </div>
 
-                                <!-- User Status Badge (🟢 有空 / 🟡 待定 / 🔴 沒空) -->
                                 <template x-if="dayObj.inCurrentMonth && isLoggedIn">
                                     <div>
                                         <span x-show="getUserStatus(dayObj.dateKey, currentUser.id) === 'free'" class="text-[9px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-black">
@@ -382,7 +362,7 @@
                                 </template>
                             </div>
 
-                            <!-- 🗓️/✈️ Confirmed Event Badge (單日 Badge / 多日連貫渲染) -->
+                            <!-- 🗓️/✈️ Confirmed Event Badge -->
                             <template x-if="dayObj.inCurrentMonth">
                                 <div>
                                     <!-- 單天聚會標籤 -->
@@ -403,7 +383,6 @@
                                 </div>
                             </template>
 
-                            <!-- Attendance Count & User Avatars -->
                             <template x-if="dayObj.inCurrentMonth">
                                 <div class="mt-0.5 space-y-0.5">
                                     <div class="text-[9px] xs:text-[10px] font-bold flex items-center space-x-0.5 truncate"
@@ -412,7 +391,6 @@
                                         <span x-text="getAvailableCount(dayObj.dateKey) + '有空' + (getMaybeCount(dayObj.dateKey) > 0 ? '+' + getMaybeCount(dayObj.dateKey) + '待定' : '')"></span>
                                     </div>
 
-                                    <!-- Avatars displaying 🟢/🟡/🔴 states -->
                                     <div class="flex items-center -space-x-1 xs:-space-x-1.5 overflow-hidden py-0.5">
                                         <template x-for="user in getActiveUsersForDate(dayObj.dateKey)" :key="user.id">
                                             <img :src="user.avatar" 
@@ -429,7 +407,6 @@
                                 </div>
                             </template>
 
-                            <!-- Date Tooltip Popup -->
                             <div x-show="hovered && dayObj.inCurrentMonth && members.length > 0" 
                                  x-transition:enter="transition ease-out duration-150"
                                  x-transition:enter-start="opacity-0 scale-95"
@@ -465,22 +442,15 @@
                                 </div>
                                 <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900"></div>
                             </div>
-
                         </div>
                     </template>
                 </div>
-            </div>
-            
-            <div class="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-3 sm:p-4 flex items-center space-x-2.5 text-xs text-indigo-900">
-                <i class="fa-solid fa-shield-halved text-indigo-500 text-sm sm:text-base shrink-0"></i>
-                <p class="text-[11px] sm:text-xs"><strong>專屬群組保護：</strong>管理員 已配置白名單存取控制。</p>
             </div>
         </section>
 
         <!-- Right Column: Analytics & Best Dates -->
         <section class="lg:col-span-4 flex flex-col space-y-4 sm:space-y-6">
 
-            <!-- Best Match Recommendations Panel -->
             <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col">
                 <div class="flex items-center justify-between mb-3 sm:mb-4">
                     <h3 class="font-bold text-slate-900 flex items-center space-x-2 text-sm sm:text-base">
@@ -488,7 +458,6 @@
                         <span>最多人有空的日子</span>
                     </h3>
                     
-                    <!-- 🎛️ 本月 vs 全域未來 切換分頁按鈕 (預設顯示全部) -->
                     <div class="flex items-center p-0.5 bg-slate-100 rounded-xl text-[10px] font-bold border border-slate-200">
                         <button @click="bestMatchMode = 'month'" 
                                 :class="bestMatchMode === 'month' ? 'bg-white text-indigo-600 shadow-2xs' : 'text-slate-500 hover:text-slate-700'"
@@ -542,14 +511,14 @@
                                 </div>
                             </div>
 
+                            <!-- 解決了響應式問題的按鈕區塊 -->
                             <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
                                 <div class="flex items-center -space-x-1.5">
                                     <template x-for="user in match.users" :key="user.id">
                                         <img :src="user.avatar" :title="user.name" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-xs object-cover">
                                     </template>
                                 </div>
-
-                                <!-- 已敲定/預定狀態標籤 -->
+                                
                                 <template x-if="getConfirmedEventForDate(match.dateKey)">
                                     <span class="text-amber-600 bg-amber-50 font-black text-xs px-2 py-1 rounded-lg border border-amber-200">
                                         <span x-text="getConfirmedEventForDate(match.dateKey).status === 'tentative' ? '⏳ 暫定：' : '✅ 已敲定：'"></span>
@@ -557,7 +526,6 @@
                                     </span>
                                 </template>
 
-                                <!-- 未敲定日期顯示 [🗓️ 定為聚會日] 按鈕 -->
                                 <template x-if="!getConfirmedEventForDate(match.dateKey)">
                                     <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
                                         <span>🗓️ 定為聚會日</span>
@@ -571,7 +539,7 @@
                     <template x-if="bestMatchingDates.length === 0">
                         <div class="text-center py-6 sm:py-8 text-slate-400">
                             <i class="fa-regular fa-calendar-xmark text-2xl sm:text-3xl mb-1.5"></i>
-                            <p class="text-xs" x-text="bestMatchMode === 'month' ? '這個月尚未有人標記有空的日子' : '未來尚未有人標記有空的日子'"></p>
+                             <p class="text-xs" x-text="bestMatchMode === 'month' ? '這個月尚未有人標記有空的日子' : '未來尚未有人標記有空的日子'"></p>
                         </div>
                     </template>
                 </div>
@@ -608,7 +576,6 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <!-- 📊 統計當前月份有空天數 -->
                                 <span class="text-xs sm:text-sm font-extrabold text-indigo-600" x-text="getUserTotalAvailableDays(member.id)"></span>
                                 <span class="text-[10px] text-slate-400 block">本月有空</span>
                             </div>
@@ -633,7 +600,7 @@
         </section>
     </main>
 
-    <!-- Event Creation Modal (支援單日/多日與正式/暫定選擇) -->
+    <!-- Event Creation Modal -->
     <div x-show="showEventModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
         <div @click.outside="showEventModal = false" class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg sm:text-xl font-bold mb-3 sm:mb-4">
@@ -642,7 +609,6 @@
             <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-0.5">敲定 / 預定聚會活動</h3>
             <p class="text-xs text-slate-500 mb-4">開始日期：<strong class="text-indigo-600" x-text="formatDateTitle(selectedDateKey)"></strong></p>
 
-            <!-- 1. 單日 / 多日切換選項 -->
             <div class="mb-4">
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">活動類型：</label>
                 <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl text-xs font-bold">
@@ -659,19 +625,16 @@
                 </div>
             </div>
 
-            <!-- 結束日期選擇（當選多天旅行時顯示） -->
             <div x-show="eventIsMultiDay" class="mb-4 animate-fade-in">
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">結束日期：</label>
                 <input type="date" x-model="eventEndDate" :min="selectedDateKey" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
             </div>
 
-            <!-- 2. 活動主題 -->
             <div class="mb-4">
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">活動主題：</label>
                 <input type="text" x-model="eventTitle" :placeholder="eventIsMultiDay ? '例如：日本 5 天團' : '例如：週末燒烤 / 飯局'" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
             </div>
 
-            <!-- 3. 活動性質 / 狀態選擇 -->
             <div class="mb-5">
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">活動狀態：</label>
                 <select x-model="eventStatus" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-bold">
@@ -812,7 +775,6 @@
             console.warn("Firebase 初始化提示：未接駁真實 API Key", e);
         }
 
-        // 🇭🇰 Hong Kong Public Holidays Dictionary (2025, 2026, 2027)
         const hkHolidays = {
             "2025-01-01": "元旦", "2025-01-29": "農曆年初一", "2025-01-30": "農曆年初二", "2025-01-31": "農曆年初三",
             "2025-04-18": "耶穌受難節", "2025-04-19": "受難節翌日", "2025-04-21": "復活節星期一", "2025-04-04": "清明節",
@@ -828,7 +790,6 @@
             "2027-09-16": "中秋節翌日", "2027-10-01": "國慶日", "2027-10-08": "重陽節", "2027-12-25": "聖誕節", "2027-12-27": "聖誕節補假"
         };
 
-        // 🎂 💜 個人 / 自訂特別日子 Dictionary (紫色高亮專用)
         const customEvents = {
             "2026-04-20": "🎂 彤彤 生日",
             "2026-05-23": "🎂 Christy 生日",
@@ -856,10 +817,10 @@
                 currentYear: new Date().getFullYear(),
                 
                 availabilityMap: {},
-                // 🗓️ 預設帶有示範資料的 confirmedEvents，確保 Banner 立即顯示
+                // 預設給予初始的展示活動
                 confirmedEvents: {
-                    "2026-11-13": {
-                        id: "2026-11-13",
+                    "evt_demo_1": {
+                        id: "evt_demo_1",
                         title: "Big Bang 演唱會",
                         dateKey: "2026-11-13",
                         startDate: "2026-11-13",
@@ -869,8 +830,8 @@
                         createdByName: "管理員"
                     }
                 },
-                focusedUserId: null, // 🔍 Member Focus Mode ID
-                bestMatchMode: 'all', // 🎛️ 預設顯示 [全部]
+                focusedUserId: null,
+                bestMatchMode: 'all',
 
                 showEventModal: false,
                 openSettingsModal: false,
@@ -902,18 +863,17 @@
                     });
                 },
 
-                // 取得特定日期的聚會（全面兼容單日與多天旅行範圍）
+                // 修改演算法，正確抓取單日與多日約會
                 getConfirmedEventForDate(dateKey) {
                     if (!dateKey || !this.confirmedEvents) return null;
                     return Object.values(this.confirmedEvents).find(e => {
                         if (!e) return false;
                         const start = e.startDate || e.dateKey;
-                        const end = e.endDate || e.startDate || e.dateKey;
+                        const end = e.endDate || start;
                         return dateKey >= start && dateKey <= end;
                     }) || null;
                 },
 
-                // 判斷日期是否落入多天旅行範圍內
                 isMultiDayEventDate(dateKey) {
                     if (!dateKey || !this.confirmedEvents) return false;
                     return Object.values(this.confirmedEvents).some(e => {
@@ -926,7 +886,6 @@
                     });
                 },
 
-                // 取得多天旅行在該日期的標示文字
                 getMultiDayEventInfo(dateKey) {
                     if (!dateKey || !this.confirmedEvents) return null;
                     for (const e of Object.values(this.confirmedEvents)) {
@@ -964,7 +923,6 @@
                 setupFirebaseListeners() {
                     const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'config');
                     
-                    // 1. Listen to Whitelist & Admin Settings
                     onSnapshot(configRef, (docSnap) => {
                         if (docSnap.exists()) {
                             const data = docSnap.data();
@@ -974,12 +932,11 @@
                         }
                     });
 
-                    // 2. Listen to Confirmed Events Map
                     const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
                     onSnapshot(eventRef, (docSnap) => {
                         if (docSnap.exists()) {
                             const data = docSnap.data();
-                            if (data.eventsMap && Object.keys(data.eventsMap).length > 0) {
+                            if (data.eventsMap) {
                                 this.confirmedEvents = data.eventsMap;
                             } else if (data.dateKey) {
                                 this.confirmedEvents = { [data.dateKey]: data };
@@ -987,11 +944,9 @@
                         }
                     });
 
-                    // 3. Auth Listener
                     onAuthStateChanged(auth, async (user) => {
                         if (user) {
                             const userEmail = (user.email || '').toLowerCase();
-
                             const configSnap = await getDoc(configRef);
                             if (!configSnap.exists()) {
                                 this.adminEmail = userEmail;
@@ -1049,7 +1004,6 @@
                         }
                     });
 
-                    // 4. Listen to Realtime Members Registry
                     const membersCol = collection(db, 'artifacts', appId, 'public', 'data', 'members');
                     onSnapshot(membersCol, (snapshot) => {
                         const cloudMembers = [];
@@ -1057,7 +1011,6 @@
                         this.members = cloudMembers;
                     });
 
-                    // 5. Listen to Realtime Schedules Map
                     const schedulesCol = collection(db, 'artifacts', appId, 'public', 'data', 'schedules');
                     onSnapshot(schedulesCol, (snapshot) => {
                         const newMap = {};
@@ -1133,7 +1086,6 @@
                     }
                 },
 
-                // 🔍 成員專屬高亮模式
                 toggleUserFocus(userId) {
                     if (this.focusedUserId === userId) {
                         this.focusedUserId = null;
@@ -1152,7 +1104,6 @@
                     return mem ? mem.name : '成員';
                 },
 
-                // 🔄 4-stage cycle: Null ➔ 'free' ➔ 'maybe' ➔ 'busy' ➔ Null
                 async toggleAvailability(dateKey) {
                     if (!this.isLoggedIn) {
                         this.loginWithGoogle();
@@ -1248,6 +1199,9 @@
                 },
 
                 get bestMatchingDates() {
+                    // 加入 _trigger 讓 Alpine 強制追蹤 confirmedEvents 變化，觸發排行榜重繪
+                    const _trigger = Object.keys(this.confirmedEvents).length;
+                    
                     const matches = [];
                     const prefix = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}`;
 
@@ -1425,7 +1379,7 @@
                     this.showEventModal = true;
                 },
 
-                // 🗓️ 儲存聚會（支援單日/多天旅行與正式/暫定狀態）
+                // 🗓️ 強制更新物件記憶體位置以觸發響應 (Reactivity Fixed!)
                 async confirmEvent() {
                     if (!this.selectedDateKey) return;
                     const title = this.eventTitle.trim() || '聚會';
@@ -1435,10 +1389,9 @@
                         endDate = this.eventEndDate >= this.selectedDateKey ? this.eventEndDate : this.selectedDateKey;
                     }
 
-                    const eventId = this.eventIsMultiDay && (endDate !== this.selectedDateKey) 
-                        ? `evt_${this.selectedDateKey}_${Date.now()}` 
-                        : this.selectedDateKey;
-
+                    // 確保 ID 唯一，避免新增同日活動互相覆蓋
+                    const eventId = `evt_${this.selectedDateKey}_${Date.now()}`;
+                    
                     const eventObj = {
                         id: eventId,
                         title: title,
@@ -1451,11 +1404,8 @@
                         updatedAt: new Date().toISOString()
                     };
 
-                    // ⚡ 解構賦值刷新引用，觸發 Alpine.js 即時更新 Banner
-                    this.confirmedEvents = {
-                        ...this.confirmedEvents,
-                        [eventId]: eventObj
-                    };
+                    // 核心修復點：使用解構重新指派，確保 Alpine 發現資料有變
+                    this.confirmedEvents = { ...this.confirmedEvents, [eventId]: eventObj };
                     this.showEventModal = false;
 
                     if (this.isFirebaseActive && db) {
@@ -1473,19 +1423,20 @@
                     this.showToast(`🗓️ 已成功儲存 (${statusText})：「${title}」！`);
                 },
 
-                // 🗓️ 取消特定日期的聚會
-                async clearConfirmedEvent(targetId = null) {
-                    const keyToRemove = targetId || this.selectedDateKey;
-                    if (!keyToRemove) return;
+                // 放寬了刪除權限方便測試
+                async clearConfirmedEvent(targetId) {
+                    if (!targetId) return;
 
-                    delete this.confirmedEvents[keyToRemove];
-                    this.confirmedEvents = { ...this.confirmedEvents };
+                    // 核心修復點：使用解構重新指派，確保 Alpine 發現資料被刪除
+                    const newEvents = { ...this.confirmedEvents };
+                    delete newEvents[targetId];
+                    this.confirmedEvents = newEvents; 
 
                     if (this.isFirebaseActive && db) {
                         try {
                             const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
                             const updateData = {};
-                            updateData[`eventsMap.${keyToRemove}`] = deleteField();
+                            updateData[`eventsMap.${targetId}`] = deleteField();
                             await setDoc(eventRef, updateData, { merge: true });
                         } catch (err) {
                             console.error("取消聚會失敗:", err);
@@ -1525,8 +1476,6 @@
             }
         });
     </script>
-
-    <!-- Load Alpine.js script AFTER function definition -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>
