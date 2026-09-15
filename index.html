@@ -145,29 +145,39 @@
         <!-- Left Column: Calendar & Controls -->
         <section class="lg:col-span-8 flex flex-col space-y-3 sm:space-y-4">
             
-            <!-- 🗓️ Confirmed Events List Banner (多次約會模式) -->
+            <!-- 🗓️ Confirmed Events List Banner (多次/多天/暫定 聚會清單) -->
             <template x-if="confirmedEventsList.length > 0">
                 <div class="bg-gradient-to-r from-amber-500 via-indigo-600 to-violet-600 text-white rounded-2xl p-3.5 sm:p-4 shadow-lg flex flex-col space-y-2 border border-amber-200/30">
                     <div class="flex items-center justify-between border-b border-white/20 pb-2">
                         <div class="flex items-center space-x-2">
                             <span class="text-xl sm:text-2xl shrink-0">🗓️</span>
                             <div class="text-xs sm:text-sm font-black tracking-tight">
-                                正式敲定聚會列表 (<span x-text="confirmedEventsList.length"></span> 個約會)
+                                敲定與預定活動列表 (<span x-text="confirmedEventsList.length"></span> 個活動)
                             </div>
                         </div>
-                        <span class="bg-amber-400 text-slate-900 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-black">多次約會模式</span>
+                        <span class="bg-amber-400 text-slate-900 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-black">夾時間模式</span>
                     </div>
 
                     <div class="space-y-2 max-h-36 overflow-y-auto custom-scrollbar pr-1">
-                        <template x-for="event in confirmedEventsList" :key="event.dateKey">
+                        <template x-for="event in confirmedEventsList" :key="event.id || event.dateKey">
                             <div class="flex items-center justify-between bg-white/10 hover:bg-white/20 p-2 rounded-xl transition text-xs">
-                                <div class="flex items-center space-x-2 truncate">
-                                    <span x-text="formatDateTitle(event.dateKey)" class="font-bold underline decoration-amber-300 underline-offset-2 shrink-0"></span>
-                                    <span class="truncate font-semibold">「<span x-text="event.title"></span>」</span>
-                                    <span class="text-[10px] font-semibold bg-white/20 px-1.5 py-0.5 rounded ml-1 shrink-0" x-text="getAvailableCount(event.dateKey) + ' 人有空'"></span>
+                                <div class="flex items-center space-x-1.5 truncate">
+                                    <!-- 狀態 Badge -->
+                                    <span :class="event.status === 'confirmed' ? 'bg-emerald-400 text-slate-900' : 'bg-amber-300 text-slate-900'"
+                                          class="text-[9px] font-black px-1.5 py-0.2 rounded-md shrink-0"
+                                          x-text="event.status === 'confirmed' ? '正式' : '⏳ 暫定'"></span>
+
+                                    <!-- 日期標示 [ 11月13日 - 11月17日 ] -->
+                                    <span class="font-bold underline decoration-amber-300 underline-offset-2 shrink-0" 
+                                          x-text="formatEventDateRange(event)"></span>
+
+                                    <!-- 活動名稱與圖標 -->
+                                    <span class="truncate font-semibold">
+                                        <span x-text="(event.isMultiDay ? '✈️ ' : '🗓️ ') + event.title"></span>
+                                    </span>
                                 </div>
                                 <template x-if="isAdmin">
-                                    <button @click="clearConfirmedEvent(event.dateKey)" title="取消此聚會" class="text-[10px] bg-black/20 hover:bg-red-600/80 active:scale-95 text-white px-2 py-1 rounded-lg transition font-bold shrink-0 touch-manipulation border border-white/20 ml-2">
+                                    <button @click="clearConfirmedEvent(event.id || event.dateKey)" title="取消此聚會" class="text-[10px] bg-black/20 hover:bg-red-600/80 active:scale-95 text-white px-2 py-1 rounded-lg transition font-bold shrink-0 touch-manipulation border border-white/20 ml-2">
                                         取消
                                     </button>
                                 </template>
@@ -314,11 +324,12 @@
                             @touchend.debounce.1500ms="hovered = false"
                             :class="{
                                 'bg-slate-50/40 border-transparent text-slate-300 pointer-events-none': !dayObj.inCurrentMonth,
-                                'border-slate-200 hover:border-indigo-400 active:scale-97 bg-white': dayObj.inCurrentMonth && !dayObj.isSunday && !dayObj.holidayName && !dayObj.customEventName,
-                                'border-purple-300 bg-purple-50/70 hover:border-purple-400': dayObj.inCurrentMonth && dayObj.customEventName,
-                                'border-rose-200 bg-rose-50/30 hover:border-rose-400': dayObj.inCurrentMonth && !dayObj.customEventName && (dayObj.isSunday || dayObj.holidayName),
+                                'bg-purple-50/60 border-purple-200': dayObj.inCurrentMonth && isMultiDayEventDate(dayObj.dateKey),
+                                'border-slate-200 hover:border-indigo-400 active:scale-97 bg-white': dayObj.inCurrentMonth && !isMultiDayEventDate(dayObj.dateKey) && !dayObj.isSunday && !dayObj.holidayName && !dayObj.customEventName,
+                                'border-purple-300 bg-purple-50/70 hover:border-purple-400': dayObj.inCurrentMonth && !isMultiDayEventDate(dayObj.dateKey) && dayObj.customEventName,
+                                'border-rose-200 bg-rose-50/30 hover:border-rose-400': dayObj.inCurrentMonth && !isMultiDayEventDate(dayObj.dateKey) && !dayObj.customEventName && (dayObj.isSunday || dayObj.holidayName),
                                 'ring-2 ring-indigo-600 ring-offset-1': dayObj.isToday && dayObj.inCurrentMonth,
-                                'ring-2 ring-amber-400 bg-amber-50/30': getConfirmedEventForDate(dayObj.dateKey) && dayObj.inCurrentMonth,
+                                'ring-2 ring-amber-400 bg-amber-50/30': getConfirmedEventForDate(dayObj.dateKey) && !isMultiDayEventDate(dayObj.dateKey) && dayObj.inCurrentMonth,
                                 'opacity-30 bg-slate-100/50': focusedUserId && dayObj.inCurrentMonth && !getUserStatus(dayObj.dateKey, focusedUserId),
                                 'ring-2 ring-emerald-500 bg-emerald-50/20': focusedUserId && dayObj.inCurrentMonth && getUserStatus(dayObj.dateKey, focusedUserId) === 'free',
                                 'ring-2 ring-amber-500 bg-amber-50/20': focusedUserId && dayObj.inCurrentMonth && getUserStatus(dayObj.dateKey, focusedUserId) === 'maybe',
@@ -373,11 +384,24 @@
                                 </template>
                             </div>
 
-                            <!-- 🗓️ Confirmed Event Badge (多次約會模式) -->
-                            <template x-if="getConfirmedEventForDate(dayObj.dateKey) && dayObj.inCurrentMonth">
-                                <div class="my-0.5 bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs">
-                                    <span>🗓️</span>
-                                    <span class="truncate" x-text="getConfirmedEventForDate(dayObj.dateKey).title"></span>
+                            <!-- 🗓️/✈️ Confirmed Event Badge (單日 Badge / 多日連貫渲染) -->
+                            <template x-if="dayObj.inCurrentMonth">
+                                <div>
+                                    <!-- 單天聚會標籤 -->
+                                    <template x-if="getConfirmedEventForDate(dayObj.dateKey) && !isMultiDayEventDate(dayObj.dateKey)">
+                                        <div class="my-0.5 bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs">
+                                            <span x-text="getConfirmedEventForDate(dayObj.dateKey).status === 'tentative' ? '⏳' : '🗓️'"></span>
+                                            <span class="truncate" x-text="getConfirmedEventForDate(dayObj.dateKey).title"></span>
+                                        </div>
+                                    </template>
+
+                                    <!-- 多天旅行/活動標籤 -->
+                                    <template x-if="getMultiDayEventInfo(dayObj.dateKey)">
+                                        <div class="my-0.5 bg-purple-600 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs">
+                                            <span>✈️</span>
+                                            <span class="truncate" x-text="getMultiDayEventInfo(dayObj.dateKey)"></span>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
 
@@ -527,17 +551,18 @@
                                     </template>
                                 </div>
                                 <template x-if="getConfirmedEventForDate(match.dateKey)">
-    <span class="text-amber-600 bg-amber-50 font-black text-xs px-2 py-1 rounded-lg border border-amber-200">
-        ✅ 已敲定：<span x-text="getConfirmedEventForDate(match.dateKey).title"></span>
-    </span>
-</template>
+                                    <span class="text-amber-600 bg-amber-50 font-black text-xs px-2 py-1 rounded-lg border border-amber-200">
+                                        <span x-text="getConfirmedEventForDate(match.dateKey).status === 'tentative' ? '⏳ 暫定：' : '✅ 已敲定：'"></span>
+                                        <span x-text="getConfirmedEventForDate(match.dateKey).title"></span>
+                                    </span>
+                                </template>
 
-<template x-else>
-    <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
-        <span>🗓️ 定為聚會日</span>
-        <i class="fa-solid fa-arrow-right text-[9px]"></i>
-    </button>
-</template>
+                                <template x-else>
+                                    <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
+                                        <span>🗓️ 定為聚會日</span>
+                                        <i class="fa-solid fa-arrow-right text-[9px]"></i>
+                                    </button>
+                                </template>
                             </div>
                         </div>
                     </template>
@@ -607,18 +632,51 @@
         </section>
     </main>
 
-    <!-- Event Creation Modal -->
+    <!-- Event Creation Modal (升級單日/多日與狀態選擇) -->
     <div x-show="showEventModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
         <div @click.outside="showEventModal = false" class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg sm:text-xl font-bold mb-3 sm:mb-4">
-                <span>🗓️</span>
+                <span x-text="eventIsMultiDay ? '✈️' : '🗓️'"></span>
             </div>
-            <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-0.5">敲定聚會活動</h3>
-            <p class="text-xs text-slate-500 mb-4">確定將日期選在：<strong class="text-indigo-600" x-text="formatDateTitle(selectedDateKey)"></strong></p>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-0.5">敲定 / 預定聚會活動</h3>
+            <p class="text-xs text-slate-500 mb-4">開始日期：<strong class="text-indigo-600" x-text="formatDateTitle(selectedDateKey)"></strong></p>
 
-            <div class="mb-5">
+            <!-- 1. 單日 / 多日切換選項 -->
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">活動類型：</label>
+                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl text-xs font-bold">
+                    <button @click="eventIsMultiDay = false; eventEndDate = selectedDateKey"
+                            :class="!eventIsMultiDay ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500'"
+                            class="py-1.5 rounded-lg transition">
+                        🗓️ 單日聚會
+                    </button>
+                    <button @click="eventIsMultiDay = true"
+                            :class="eventIsMultiDay ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500'"
+                            class="py-1.5 rounded-lg transition">
+                        ✈️ 多天旅行
+                    </button>
+                </div>
+            </div>
+
+            <!-- 結束日期選擇（當選多天旅行時顯示） -->
+            <div x-show="eventIsMultiDay" class="mb-4 animate-fade-in">
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">結束日期：</label>
+                <input type="date" x-model="eventEndDate" :min="selectedDateKey" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+
+            <!-- 2. 活動主題 -->
+            <div class="mb-4">
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">活動主題：</label>
-                <input type="text" x-model="eventTitle" placeholder="例如：週末燒烤 / 飯局" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                <input type="text" x-model="eventTitle" :placeholder="eventIsMultiDay ? '例如：日本 5 天團' : '例如：週末燒烤 / 飯局'" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+
+            <!-- 3. 活動性質 / 狀態選擇 -->
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">活動狀態：</label>
+                <select x-model="eventStatus" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-bold">
+                    <option value="confirmed">✅ 正式敲定</option>
+                    <option value="tentative">⏳ 暫定 / 投票中</option>
+                </select>
             </div>
 
             <div class="flex space-x-2.5">
@@ -626,7 +684,7 @@
                     取消
                 </button>
                 <button @click="confirmEvent()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md touch-manipulation">
-                    發起聚會通知
+                    儲存活動通知
                 </button>
             </div>
         </div>
@@ -774,20 +832,19 @@
 
         // 🎂 💜 個人 / 自訂特別日子 Dictionary (紫色高亮專用)
         const customEvents = {
-            
             "2026-04-20": "🎂 彤彤 生日",
-"2026-05-23": "🎂 Christy 生日",
-"2026-09-13": "🎂 Candice生日",
-"2026-11-11": "🎂 Carmen 生日",
-"2026-11-13": "👑 Big Bang 演唱會",
-"2027-04-20": "🎂 彤彤 生日",
-"2027-05-23": "🎂 Christy 生日",
-"2027-09-13": "🎂 Candice生日",
-"2027-11-11": "🎂 Carmen 生日",
-"2028-04-20": "🎂 彤彤 生日",
-"2028-05-23": "🎂 Christy 生日",
-"2028-09-13": "🎂 Candice生日",
-"2028-11-11": "🎂 Carmen 生日"
+            "2026-05-23": "🎂 Christy 生日",
+            "2026-09-13": "🎂 Candice生日",
+            "2026-11-11": "🎂 Carmen 生日",
+            "2026-11-13": "👑 Big Bang 演唱會",
+            "2027-04-20": "🎂 彤彤 生日",
+            "2027-05-23": "🎂 Christy 生日",
+            "2027-09-13": "🎂 Candice生日",
+            "2027-11-11": "🎂 Carmen 生日",
+            "2028-04-20": "🎂 彤彤 生日",
+            "2028-05-23": "🎂 Christy 生日",
+            "2028-09-13": "🎂 Candice生日",
+            "2028-11-11": "🎂 Carmen 生日"
         };
 
         function createTimeMatcherApp() {
@@ -802,7 +859,7 @@
                 
                 // Firestore schedule structure: { "2026-09-15": { "uid123": "free", "uid456": "maybe", "uid789": "busy" } }
                 availabilityMap: {},
-                // 多次約會模式：儲存格式為 { "2026-09-15": { title: '週末燒烤', dateKey: '2026-09-15', createdByName: 'Alex' }, ... }
+                // 多次/多天約會模式字典
                 confirmedEvents: {},
                 focusedUserId: null, // 🔍 Member Focus Mode ID
                 bestMatchMode: 'all', // 🎛️ 方案 B 模式: 'month' (本月) 或 'all' (全域未來)
@@ -813,6 +870,9 @@
                 tempDisplayName: '',
                 selectedDateKey: '',
                 eventTitle: '週末燒烤',
+                eventIsMultiDay: false,
+                eventEndDate: '',
+                eventStatus: 'confirmed',
                 toast: { visible: false, message: '' },
 
                 adminEmail: '',
@@ -826,13 +886,56 @@
                 },
 
                 get confirmedEventsList() {
-                    const list = Object.values(this.confirmedEvents).filter(e => e && e.dateKey);
-                    return list.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+                    const list = Object.values(this.confirmedEvents).filter(e => e && (e.dateKey || e.startDate));
+                    return list.sort((a, b) => {
+                        const startA = a.startDate || a.dateKey;
+                        const startB = b.startDate || b.dateKey;
+                        return startA.localeCompare(startB);
+                    });
                 },
 
+                // 取得特定單一日期發起的聚會
                 getConfirmedEventForDate(dateKey) {
                     if (!dateKey) return null;
                     return this.confirmedEvents[dateKey] || null;
+                },
+
+                // 判斷日期是否落入多天旅行範圍內
+                isMultiDayEventDate(dateKey) {
+                    if (!dateKey) return false;
+                    return Object.values(this.confirmedEvents).some(e => {
+                        if (e && e.isMultiDay && e.startDate && e.endDate) {
+                            return dateKey >= e.startDate && dateKey <= e.endDate;
+                        }
+                        return false;
+                    });
+                },
+
+                // 取得多天旅行在該日期的標示文字
+                getMultiDayEventInfo(dateKey) {
+                    if (!dateKey) return null;
+                    for (const e of Object.values(this.confirmedEvents)) {
+                        if (e && e.isMultiDay && e.startDate && e.endDate) {
+                            if (dateKey >= e.startDate && dateKey <= e.endDate) {
+                                if (dateKey === e.startDate) {
+                                    return `${e.title} (Day 1)`;
+                                }
+                                return e.title;
+                            }
+                        }
+                    }
+                    return null;
+                },
+
+                formatEventDateRange(event) {
+                    const start = event.startDate || event.dateKey;
+                    const end = event.endDate || start;
+                    if (!event.isMultiDay || start === end) {
+                        return this.formatDateTitle(start);
+                    }
+                    const partsStart = start.split('-');
+                    const partsEnd = end.split('-');
+                    return `${partsStart[1]}月${partsStart[2]}日 - ${partsEnd[1]}月${partsEnd[2]}日`;
                 },
 
                 initApp() {
@@ -854,7 +957,7 @@
                         }
                     });
 
-                    // 2. Listen to Confirmed Events Map (多次約會模式)
+                    // 2. Listen to Confirmed Events Map
                     const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
                     onSnapshot(eventRef, (docSnap) => {
                         if (docSnap.exists()) {
@@ -862,7 +965,6 @@
                             if (data.eventsMap) {
                                 this.confirmedEvents = data.eventsMap;
                             } else if (data.dateKey) {
-                                // 兼容極舊單一約會結構
                                 this.confirmedEvents = { [data.dateKey]: data };
                             } else {
                                 this.confirmedEvents = {};
@@ -877,7 +979,6 @@
                         if (user) {
                             const userEmail = (user.email || '').toLowerCase();
 
-                            // Safely check cloud config first to prevent overwrite bug
                             const configSnap = await getDoc(configRef);
                             if (!configSnap.exists()) {
                                 this.adminEmail = userEmail;
@@ -893,7 +994,6 @@
                                 this.allowedEmails = cloudData.allowedEmails || [userEmail, '', '', '', ''];
                             }
 
-                            // Whitelist Enforcement
                             if (this.enableWhitelist) {
                                 const cleanAllowed = this.allowedEmails.map(e => e.trim().toLowerCase()).filter(e => e !== '');
                                 const isAllowed = cleanAllowed.length === 0 || cleanAllowed.includes(userEmail);
@@ -1113,7 +1213,6 @@
                     return this.members.filter(m => userIds.includes(m.id));
                 },
 
-                // 📊 修正為「只統計當前瀏覽月份」的有空天數
                 getUserTotalAvailableDays(userId) {
                     let count = 0;
                     const prefix = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}`;
@@ -1126,7 +1225,6 @@
                     return count;
                 },
 
-                // 🌙 判斷是否為「公眾假期前夕 (Eve of Holiday)」
                 isEveOfHoliday(dateKey) {
                     if (!dateKey) return false;
                     const dateParts = dateKey.split('-');
@@ -1136,17 +1234,15 @@
                     return !!hkHolidays[nextDateKey];
                 },
 
-                // 智能最佳相容日演算法 (融入 Friday 及 假期前夕 權重加分)
                 get bestMatchingDates() {
                     const matches = [];
                     const prefix = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}`;
 
-                   const today = new Date();
+                    const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
                     Object.keys(this.availabilityMap).forEach(dateKey => {
-                        // 1. 根據 mode 進行過濾
                         const matchMonth = (this.bestMatchMode === 'month') ? dateKey.startsWith(prefix) : (dateKey >= todayStr);
 
                         if (matchMonth) {
@@ -1161,7 +1257,6 @@
                                 const isHol = !!hkHolidays[dateKey];
                                 const isCust = !!customEvents[dateKey];
 
-                                // 基礎分數：有空 +2分, 待定 +1分, 星期五/假期前夕/自訂活動 +1.5分 額外加權
                                 let score = (freeCount * 2) + maybeCount;
                                 if (isFriday || isEve || isHol || isCust) score += 1.5;
 
@@ -1285,13 +1380,12 @@
                     return 'text-slate-500 font-normal';
                 },
 
-               formatDateTitle(dateKey, showMonth = false) {
+                formatDateTitle(dateKey, showMonth = false) {
                     if (!dateKey) return '';
                     const parts = dateKey.split('-');
                     return showMonth ? `${parts[1]}月${parts[2]}日` : `${parts[1]}月${parts[2]}日`;
                 },
 
-                // 自動跳轉月曆並打開敲定聚會視窗
                 jumpToDateAndOpenModal(dateKey) {
                     if (!dateKey) return;
                     const parts = dateKey.split('-');
@@ -1302,47 +1396,67 @@
 
                 openEventModal(dateKey) {
                     this.selectedDateKey = dateKey;
+                    this.eventEndDate = dateKey;
+                    this.eventIsMultiDay = false;
+                    this.eventStatus = 'confirmed';
+                    
                     if (this.confirmedEvents[dateKey]) {
-                        this.eventTitle = this.confirmedEvents[dateKey].title || '週末燒烤';
+                        const existing = this.confirmedEvents[dateKey];
+                        this.eventTitle = existing.title || '週末燒烤';
+                        this.eventIsMultiDay = !!existing.isMultiDay;
+                        this.eventEndDate = existing.endDate || dateKey;
+                        this.eventStatus = existing.status || 'confirmed';
                     } else {
                         this.eventTitle = '週末燒烤';
                     }
                     this.showEventModal = true;
                 },
 
-                // 🗓️ 多次約會模式發起聚會
+                // 🗓️ 儲存聚會（支援單日/多天旅行與正式/暫定狀態）
                 async confirmEvent() {
                     if (!this.selectedDateKey) return;
                     const title = this.eventTitle.trim() || '聚會';
 
+                    let endDate = this.selectedDateKey;
+                    if (this.eventIsMultiDay && this.eventEndDate) {
+                        endDate = this.eventEndDate >= this.selectedDateKey ? this.eventEndDate : this.selectedDateKey;
+                    }
+
+                    const eventId = this.selectedDateKey;
                     const eventObj = {
+                        id: eventId,
                         title: title,
                         dateKey: this.selectedDateKey,
+                        startDate: this.selectedDateKey,
+                        endDate: endDate,
+                        isMultiDay: this.eventIsMultiDay,
+                        status: this.eventStatus,
                         createdByName: this.currentUser ? this.currentUser.name : '成員',
                         updatedAt: new Date().toISOString()
                     };
 
-                    this.confirmedEvents[this.selectedDateKey] = eventObj;
+                    this.confirmedEvents[eventId] = eventObj;
                     this.showEventModal = false;
 
                     if (this.isFirebaseActive && db) {
                         try {
                             const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
                             const updateData = {};
-                            updateData[`eventsMap.${this.selectedDateKey}`] = eventObj;
+                            updateData[`eventsMap.${eventId}`] = eventObj;
                             await setDoc(eventRef, updateData, { merge: true });
                         } catch (err) {
                             console.error("寫入聚會活動失敗:", err);
                         }
                     }
 
-                    this.showToast(`🗓️ 已為 ${this.formatDateTitle(this.selectedDateKey)} 成功發起「${title}」！`);
+                    const statusText = this.eventStatus === 'confirmed' ? '✅ 正式敲定' : '⏳ 暫定';
+                    this.showToast(`🗓️ 已成功儲存 (${statusText})：「${title}」！`);
                 },
 
-                // 🗓️ 取消特定日期的聚會 (多次約會模式)
-                async clearConfirmedEvent(targetDateKey = null) {
+                // 🗓️ 取消特定日期的聚會
+                async clearConfirmedEvent(targetId = null) {
                     if (!this.isAdmin) return;
-                    const keyToRemove = targetDateKey || this.selectedDateKey;
+                    const keyToRemove = targetId || this.selectedDateKey;
                     if (!keyToRemove) return;
 
                     delete this.confirmedEvents[keyToRemove];
@@ -1359,7 +1473,7 @@
                         }
                     }
 
-                    this.showToast(`已取消 ${this.formatDateTitle(keyToRemove)} 的聚會`);
+                    this.showToast('已成功取消活動');
                 },
 
                 copyShareLink() {
