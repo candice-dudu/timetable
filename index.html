@@ -490,7 +490,7 @@
                         <span>最多人有空的日子</span>
                     </h3>
                     
-             <!-- 🎛️ 方案 B: 本月 vs 全域未來 切換分頁按鈕 -->
+                    <!-- 🎛️ 本月 vs 全域未來 切換分頁按鈕 (預設顯示全部) -->
                     <div class="flex items-center p-0.5 bg-slate-100 rounded-xl text-[10px] font-bold border border-slate-200">
                         <button @click="bestMatchMode = 'month'" 
                                 :class="bestMatchMode === 'month' ? 'bg-white text-indigo-600 shadow-2xs' : 'text-slate-500 hover:text-slate-700'"
@@ -550,6 +550,8 @@
                                         <img :src="user.avatar" :title="user.name" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-xs object-cover">
                                     </template>
                                 </div>
+
+                                <!-- 已敲定/預定狀態標籤 -->
                                 <template x-if="getConfirmedEventForDate(match.dateKey)">
                                     <span class="text-amber-600 bg-amber-50 font-black text-xs px-2 py-1 rounded-lg border border-amber-200">
                                         <span x-text="getConfirmedEventForDate(match.dateKey).status === 'tentative' ? '⏳ 暫定：' : '✅ 已敲定：'"></span>
@@ -557,7 +559,8 @@
                                     </span>
                                 </template>
 
-                                <template x-else>
+                                <!-- 未敲定日期顯示 [🗓️ 定為聚會日] 按鈕 -->
+                                <template x-if="!getConfirmedEventForDate(match.dateKey)">
                                     <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
                                         <span>🗓️ 定為聚會日</span>
                                         <i class="fa-solid fa-arrow-right text-[9px]"></i>
@@ -570,7 +573,7 @@
                     <template x-if="bestMatchingDates.length === 0">
                         <div class="text-center py-6 sm:py-8 text-slate-400">
                             <i class="fa-regular fa-calendar-xmark text-2xl sm:text-3xl mb-1.5"></i>
-                             <p class="text-xs" x-text="bestMatchMode === 'month' ? '這個月尚未有人標記有空的日子' : '未來尚未有人標記有空的日子'"></p>
+                            <p class="text-xs" x-text="bestMatchMode === 'month' ? '這個月尚未有人標記有空的日子' : '未來尚未有人標記有空的日子'"></p>
                         </div>
                     </template>
                 </div>
@@ -607,7 +610,7 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <!-- 📊 修正為只統計「當前月份」有空天數 -->
+                                <!-- 📊 統計當前月份有空天數 -->
                                 <span class="text-xs sm:text-sm font-extrabold text-indigo-600" x-text="getUserTotalAvailableDays(member.id)"></span>
                                 <span class="text-[10px] text-slate-400 block">本月有空</span>
                             </div>
@@ -632,7 +635,7 @@
         </section>
     </main>
 
-    <!-- Event Creation Modal (升級單日/多日與狀態選擇) -->
+    <!-- Event Creation Modal (支援單日/多日與正式/暫定選擇) -->
     <div x-show="showEventModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
         <div @click.outside="showEventModal = false" class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg sm:text-xl font-bold mb-3 sm:mb-4">
@@ -813,17 +816,14 @@
 
         // 🇭🇰 Hong Kong Public Holidays Dictionary (2025, 2026, 2027)
         const hkHolidays = {
-            // 2025 Holidays
             "2025-01-01": "元旦", "2025-01-29": "農曆年初一", "2025-01-30": "農曆年初二", "2025-01-31": "農曆年初三",
             "2025-04-18": "耶穌受難節", "2025-04-19": "受難節翌日", "2025-04-21": "復活節星期一", "2025-04-04": "清明節",
             "2025-05-01": "勞動節", "2025-05-05": "佛誕", "2025-05-31": "端午節", "2025-07-01": "特區成立日",
             "2025-10-01": "國慶日", "2025-10-07": "中秋節翌日", "2025-10-29": "重陽節", "2025-12-25": "聖誕節", "2025-12-26": "聖誕節翌日",
-            // 2026 Holidays
             "2026-01-01": "元旦", "2026-02-17": "農曆年初一", "2026-02-18": "農曆年初二", "2026-02-19": "農曆年初三",
             "2026-04-03": "耶穌受難節", "2026-04-04": "受難節翌日", "2026-04-06": "清明節翌日", "2026-04-07": "復活節翌日",
             "2026-05-01": "勞動節", "2026-05-25": "佛誕翌日", "2026-06-19": "端午節", "2026-07-01": "特區成立日",
             "2026-09-26": "中秋節翌日", "2026-10-01": "國慶日", "2026-10-19": "重陽節翌日", "2026-12-25": "聖誕節", "2026-12-26": "聖誕節翌日",
-            // 2027 Holidays
             "2027-01-01": "元旦", "2027-02-06": "農曆年初一", "2027-02-08": "農曆年初三", "2027-02-09": "年初二補假",
             "2027-03-26": "耶穌受難節", "2027-03-27": "受難節翌日", "2027-03-29": "復活節星期一", "2027-04-05": "清明節",
             "2027-05-01": "勞動節", "2027-05-13": "佛誕", "2027-06-09": "端午節", "2027-07-01": "特區成立日",
@@ -857,12 +857,10 @@
                 currentMonth: new Date().getMonth(),
                 currentYear: new Date().getFullYear(),
                 
-                // Firestore schedule structure: { "2026-09-15": { "uid123": "free", "uid456": "maybe", "uid789": "busy" } }
                 availabilityMap: {},
-                // 多次/多天約會模式字典
                 confirmedEvents: {},
                 focusedUserId: null, // 🔍 Member Focus Mode ID
-                bestMatchMode: 'all', // 🎛️ 方案 B 模式: 'month' (本月) 或 'all' (全域未來)
+                bestMatchMode: 'all', // 🎛️ 預設顯示 [全部]
 
                 showEventModal: false,
                 openSettingsModal: false,
@@ -894,10 +892,11 @@
                     });
                 },
 
-                // 取得特定單一日期發起的聚會
+                // 取得特定日期的聚會（包含單日與多天範圍檢測）
                 getConfirmedEventForDate(dateKey) {
                     if (!dateKey) return null;
-                    return this.confirmedEvents[dateKey] || null;
+                    if (this.confirmedEvents[dateKey]) return this.confirmedEvents[dateKey];
+                    return Object.values(this.confirmedEvents).find(e => e && e.startDate && e.endDate && dateKey >= e.startDate && dateKey <= e.endDate) || null;
                 },
 
                 // 判斷日期是否落入多天旅行範圍內
