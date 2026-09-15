@@ -364,13 +364,20 @@
 
                             <!-- 🗓️/✈️ Confirmed Event Badge -->
                             <template x-if="dayObj.inCurrentMonth">
-                                <div>
-                                    <!-- 所有活動標籤：同一天可同時顯示多個活動 -->
-                                    <template x-for="event in getEventsForDate(dayObj.dateKey)" :key="event.id">
-                                        <div class="my-0.5 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs"
-                                             :class="event.isMultiDay ? 'bg-purple-600' : 'bg-gradient-to-r from-amber-500 to-indigo-600'">
-                                            <span x-text="event.isMultiDay ? '✈️' : (event.status === 'tentative' ? '⏳' : '🗓️')"></span>
-                                            <span class="truncate" x-text="event.isMultiDay && dayObj.dateKey === (event.startDate || event.dateKey) ? event.title + ' (Day 1)' : event.title"></span>
+                                <div class="space-y-0.5">
+                                    <!-- 同一天可以有多個單日聚會；每個活動各自顯示 Badge -->
+                                    <template x-for="event in getEventsForDate(dayObj.dateKey).filter(e => !e.isMultiDay)" :key="event.id">
+                                        <div class="my-0.5 bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs">
+                                            <span x-text="event.status === 'tentative' ? '⏳' : '🗓️'"></span>
+                                            <span class="truncate" x-text="event.title"></span>
+                                        </div>
+                                    </template>
+
+                                    <!-- 多天旅行：整段日期以淡紫色背景連續高亮，只在首日顯示 Day 1 -->
+                                    <template x-for="event in getEventsForDate(dayObj.dateKey).filter(e => e.isMultiDay && (e.startDate || e.dateKey) === dayObj.dateKey)" :key="event.id">
+                                        <div class="my-0.5 bg-purple-600 text-white text-[8px] xs:text-[9px] font-black px-1 py-0.5 rounded-md flex items-center space-x-0.5 truncate shadow-xs">
+                                            <span>✈️</span>
+                                            <span class="truncate" x-text="event.title + ' (Day 1)'"></span>
                                         </div>
                                     </template>
                                 </div>
@@ -512,15 +519,17 @@
                                     </template>
                                 </div>
                                 
-                                <template x-if="getEventsForDate(match.dateKey).length > 0">
-                                    <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-amber-600 hover:text-amber-800 font-black text-xs flex items-center space-x-1 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation border border-amber-200">
-                                        <span>🗓️</span>
-                                        <span class="truncate max-w-[120px]" x-text="getEventsForDate(match.dateKey).map(e => (e.status === 'tentative' ? '⏳ ' : '✅ ') + e.title).join('、')"></span>
+                                <template x-if="getConfirmedEventForDate(match.dateKey)">
+                                    <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-amber-600 bg-amber-50 hover:bg-amber-100 font-black text-xs px-2 py-1 rounded-lg border border-amber-200 transition active:scale-95 touch-manipulation flex items-center space-x-1 max-w-[65%]" title="查看此活動">
+                                        <span class="truncate">
+                                            <span x-text="getConfirmedEventForDate(match.dateKey).status === 'tentative' ? '⏳ 暫定：' : '✅ 已敲定：'"></span>
+                                            <span x-text="getConfirmedEventForDate(match.dateKey).title"></span>
+                                        </span>
                                         <i class="fa-solid fa-arrow-right text-[9px] shrink-0"></i>
                                     </button>
                                 </template>
 
-                                <template x-if="getEventsForDate(match.dateKey).length === 0">
+                                <template x-if="!getConfirmedEventForDate(match.dateKey)">
                                     <button @click="jumpToDateAndOpenModal(match.dateKey)" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition active:scale-95 touch-manipulation">
                                         <span>🗓️ 定為聚會日</span>
                                         <i class="fa-solid fa-arrow-right text-[9px]"></i>
@@ -606,12 +615,12 @@
             <div class="mb-4">
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">活動類型：</label>
                 <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl text-xs font-bold">
-                    <button @click="eventIsMultiDay = false; eventEndDate = selectedDateKey"
+                    <button type="button" @click="eventIsMultiDay = false; eventEndDate = selectedDateKey"
                             :class="!eventIsMultiDay ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500'"
                             class="py-1.5 rounded-lg transition">
                         🗓️ 單日聚會
                     </button>
-                    <button @click="eventIsMultiDay = true"
+                    <button type="button" @click="eventIsMultiDay = true"
                             :class="eventIsMultiDay ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500'"
                             class="py-1.5 rounded-lg transition">
                         ✈️ 多天旅行
@@ -641,7 +650,7 @@
                 <button @click="showEventModal = false" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition touch-manipulation">
                     取消
                 </button>
-                <button @click="confirmEvent()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md touch-manipulation">
+                <button type="button" @click="confirmEvent()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md touch-manipulation">
                     儲存活動通知
                 </button>
             </div>
@@ -742,7 +751,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, deleteField, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteField, onSnapshot, collection, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase Config
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
@@ -826,9 +835,6 @@
                 },
                 focusedUserId: null,
                 bestMatchMode: 'all',
-                // 防止 Firebase 舊 snapshot 在寫入瞬間覆蓋剛新增的活動
-                pendingEventWrites: {},
-                pendingEventDeletes: {},
 
                 showEventModal: false,
                 openSettingsModal: false,
@@ -860,46 +866,35 @@
                     });
                 },
 
-                // 修改演算法，正確抓取單日與多日約會
-                // 取得指定日期的所有活動；支援同一天多個活動及多天活動重疊
+                // 活動日期查詢：支援同一天多個活動，以及單日／多日活動並存
                 getEventsForDate(dateKey) {
                     if (!dateKey || !this.confirmedEvents) return [];
-                    return Object.values(this.confirmedEvents)
-                        .filter(e => {
-                            if (!e) return false;
-                            const start = e.startDate || e.dateKey;
-                            const end = e.endDate || start;
-                            return start && end && dateKey >= start && dateKey <= end;
-                        })
-                        .sort((a, b) => {
-                            const startA = a.startDate || a.dateKey || '';
-                            const startB = b.startDate || b.dateKey || '';
-                            return startA.localeCompare(startB) || String(a.id || '').localeCompare(String(b.id || ''));
-                        });
+                    return Object.values(this.confirmedEvents).filter(e => {
+                        if (!e) return false;
+                        const start = e.startDate || e.dateKey;
+                        const end = e.endDate || start;
+                        return !!start && !!end && dateKey >= start && dateKey <= end;
+                    });
                 },
 
-                // 保留原有單一活動 API，其他功能仍可使用；只取該日期第一個活動
                 getConfirmedEventForDate(dateKey) {
                     return this.getEventsForDate(dateKey)[0] || null;
                 },
 
                 isMultiDayEventDate(dateKey) {
-                    return this.getEventsForDate(dateKey).some(e => {
-                        const start = e.startDate || e.dateKey;
-                        const end = e.endDate || start;
-                        return !!e.isMultiDay && start && end && start !== end;
-                    });
+                    return this.getEventsForDate(dateKey).some(e => !!e.isMultiDay);
                 },
 
                 getMultiDayEventInfo(dateKey) {
-                    const event = this.getEventsForDate(dateKey).find(e => {
-                        const start = e.startDate || e.dateKey;
-                        const end = e.endDate || start;
-                        return !!e.isMultiDay && start && end && start !== end;
-                    });
+                    const event = this.getEventsForDate(dateKey).find(e => e.isMultiDay);
                     if (!event) return null;
                     const start = event.startDate || event.dateKey;
-                    return dateKey === start ? `${event.title} (Day 1)` : event.title;
+                    // 多天活動只在首日顯示 Day 1；其餘日期保留淡色連續背景
+                    return dateKey === start ? `${event.title} (Day 1)` : null;
+                },
+
+                getMultiDayEventForDate(dateKey) {
+                    return this.getEventsForDate(dateKey).find(e => e.isMultiDay) || null;
                 },
 
                 formatEventDateRange(event) {
@@ -935,22 +930,13 @@
                     onSnapshot(eventRef, (docSnap) => {
                         if (docSnap.exists()) {
                             const data = docSnap.data();
-                            let cloudEvents = {};
-                            if (data.eventsMap && typeof data.eventsMap === 'object') {
-                                cloudEvents = data.eventsMap;
+                            if (data.eventsMap) {
+                                this.confirmedEvents = Object.fromEntries(
+                                    Object.entries(data.eventsMap).filter(([id, e]) => e && (e.id || id) && (e.startDate || e.dateKey))
+                                );
                             } else if (data.dateKey) {
-                                const legacyId = data.id || data.dateKey;
-                                cloudEvents = { [legacyId]: data };
+                                this.confirmedEvents = { [data.id || data.dateKey]: data };
                             }
-
-                            // 合併本地尚未被 snapshot 看見的新增活動；避免「跳一下後消失」
-                            Object.entries(this.pendingEventWrites).forEach(([eventId, event]) => {
-                                cloudEvents[eventId] = event;
-                            });
-                            Object.keys(this.pendingEventDeletes).forEach(eventId => {
-                                delete cloudEvents[eventId];
-                            });
-                            this.confirmedEvents = cloudEvents;
                         }
                     });
 
@@ -1017,7 +1003,10 @@
                     const membersCol = collection(db, 'artifacts', appId, 'public', 'data', 'members');
                     onSnapshot(membersCol, (snapshot) => {
                         const cloudMembers = [];
-                        snapshot.forEach(docSnap => cloudMembers.push(docSnap.data()));
+                        snapshot.forEach(docSnap => {
+                            const member = docSnap.data();
+                            if (member && member.id) cloudMembers.push(member);
+                        });
                         this.members = cloudMembers;
                     });
 
@@ -1209,9 +1198,6 @@
                 },
 
                 get bestMatchingDates() {
-                    // 加入 _trigger 讓 Alpine 強制追蹤 confirmedEvents 變化，觸發排行榜重繪
-                    const _trigger = Object.keys(this.confirmedEvents).length;
-                    
                     const matches = [];
                     const prefix = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}`;
 
@@ -1389,19 +1375,16 @@
                     this.showEventModal = true;
                 },
 
-                // 🗓️ 強制更新物件記憶體位置以觸發響應 (Reactivity Fixed!)
                 async confirmEvent() {
                     if (!this.selectedDateKey) return;
-                    const title = this.eventTitle.trim() || '聚會';
+                    const title = (this.eventTitle || '').trim() || '聚會';
 
                     let endDate = this.selectedDateKey;
                     if (this.eventIsMultiDay && this.eventEndDate) {
                         endDate = this.eventEndDate >= this.selectedDateKey ? this.eventEndDate : this.selectedDateKey;
                     }
 
-                    // 確保 ID 唯一，避免新增同日活動互相覆蓋
                     const eventId = `evt_${this.selectedDateKey}_${Date.now()}`;
-                    
                     const eventObj = {
                         id: eventId,
                         title: title,
@@ -1414,117 +1397,60 @@
                         updatedAt: new Date().toISOString()
                     };
 
-                    // 先記錄 pending，避免 Firebase 舊 snapshot 把剛新增的活動蓋掉
-                    this.pendingEventWrites[eventId] = eventObj;
-                    delete this.pendingEventDeletes[eventId];
-                    this.confirmedEvents = { ...this.confirmedEvents, [eventId]: eventObj };
-                    this.showEventModal = false;
-
                     if (this.isFirebaseActive && db) {
                         try {
                             const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
-
-                            // 重要修正：不要只更新 eventsMap.<eventId> 的巢狀欄位。
-                            // 先讀取雲端現有 eventsMap，再合併新活動後整個寫回，
-                            // 確保重新整理後 Firestore 真的保存了新活動。
-                            const currentSnap = await getDoc(eventRef);
-                            let cloudEvents = {};
-                            if (currentSnap.exists()) {
-                                const cloudData = currentSnap.data();
-                                if (cloudData.eventsMap && typeof cloudData.eventsMap === 'object') {
-                                    cloudEvents = { ...cloudData.eventsMap };
-                                } else if (cloudData.dateKey) {
-                                    const legacyId = cloudData.id || cloudData.dateKey;
-                                    cloudEvents = { [legacyId]: cloudData };
-                                }
-                            }
-
-                            cloudEvents[eventId] = eventObj;
-                            await setDoc(eventRef, { eventsMap: cloudEvents }, { merge: true });
-
-                            // 再確認一次真正寫入 Firestore，才解除 pending 保護。
-                            const verifySnap = await getDoc(eventRef);
-                            const verifyData = verifySnap.exists() ? verifySnap.data() : null;
-                            const savedEvent = verifyData && verifyData.eventsMap
-                                ? verifyData.eventsMap[eventId]
-                                : null;
-
-                            if (!savedEvent) {
-                                throw new Error('Firestore 寫入後找不到新活動，可能被安全規則或其他同步程序拒絕。');
-                            }
-
-                            // Firestore 已確認保存；之後重新整理仍可從雲端讀回。
-                            delete this.pendingEventWrites[eventId];
+                            await runTransaction(db, async (transaction) => {
+                                const snap = await transaction.get(eventRef);
+                                const data = snap.exists() ? snap.data() : {};
+                                const eventsMap = (data.eventsMap && typeof data.eventsMap === 'object') ? { ...data.eventsMap } : {};
+                                eventsMap[eventId] = eventObj;
+                                transaction.set(eventRef, { eventsMap }, { merge: true });
+                            });
                         } catch (err) {
-                            console.error("寫入聚會活動失敗:", err);
-                            delete this.pendingEventWrites[eventId];
-                            const rollback = { ...this.confirmedEvents };
-                            delete rollback[eventId];
-                            this.confirmedEvents = rollback;
+                            console.error('寫入聚會活動失敗:', err);
                             this.showToast('⚠️ 活動儲存失敗，請稍後再試');
                             return;
                         }
-                    } else {
-                        delete this.pendingEventWrites[eventId];
                     }
+
+                    // Firebase 成功後才更新本地狀態，避免刷新後消失
+                    this.confirmedEvents = { ...this.confirmedEvents, [eventId]: eventObj };
+                    this.showEventModal = false;
 
                     const statusText = this.eventStatus === 'confirmed' ? '✅ 正式敲定' : '⏳ 暫定';
                     this.showToast(`🗓️ 已成功儲存 (${statusText})：「${title}」！`);
                 },
 
-                // 放寬了刪除權限方便測試
                 async clearConfirmedEvent(targetId) {
                     if (!targetId) return;
 
-                    // 先立即從畫面移除，讓按鈕有即時反應；同時阻止舊 snapshot 把它帶回來。
-                    const eventToDelete = this.confirmedEvents ? this.confirmedEvents[targetId] : null;
-                    delete this.pendingEventWrites[targetId];
-                    this.pendingEventDeletes[targetId] = true;
+                    const oldEvents = { ...this.confirmedEvents };
+                    if (!oldEvents[targetId]) return;
 
-                    const localEvents = { ...(this.confirmedEvents || {}) };
-                    delete localEvents[targetId];
-                    this.confirmedEvents = localEvents;
-                    this.showToast(`正在取消活動：「${eventToDelete?.title || '活動'}」...`);
-
-                    if (!(this.isFirebaseActive && db)) {
-                        delete this.pendingEventDeletes[targetId];
-                        this.showToast('已成功取消活動');
-                        return;
+                    if (this.isFirebaseActive && db) {
+                        try {
+                            const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
+                            await runTransaction(db, async (transaction) => {
+                                const snap = await transaction.get(eventRef);
+                                const data = snap.exists() ? snap.data() : {};
+                                const eventsMap = (data.eventsMap && typeof data.eventsMap === 'object') ? { ...data.eventsMap } : {};
+                                if (!(targetId in eventsMap)) return;
+                                delete eventsMap[targetId];
+                                transaction.set(eventRef, { eventsMap }, { merge: true });
+                            });
+                        } catch (err) {
+                            console.error('取消聚會失敗:', err);
+                            this.showToast('⚠️ 取消活動失敗，請稍後再試');
+                            return;
+                        }
                     }
 
-                    try {
-                        const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
-
-                        // 使用 Firestore 原生 deleteField 精準刪除該活動。
-                        // eventId 只含 evt_、日期及 timestamp，不含 '.'，可安全作為 map key。
-                        const updateData = {};
-                        updateData[`eventsMap.${targetId}`] = deleteField();
-                        await setDoc(eventRef, updateData, { merge: true });
-
-                        // 確認雲端已刪除；若沒有，保留 pending delete，避免 snapshot 把活動帶回。
-                        const verifySnap = await getDoc(eventRef);
-                        const verifyData = verifySnap.exists() ? verifySnap.data() : null;
-                        const stillExists = !!(verifyData && verifyData.eventsMap && verifyData.eventsMap[targetId]);
-
-                        if (stillExists) {
-                            throw new Error('Firestore 尚未確認刪除活動');
-                        }
-
-                        delete this.pendingEventDeletes[targetId];
-                        this.showToast('已成功取消活動');
-                    } catch (err) {
-                        console.error('取消聚會失敗:', err);
-                        delete this.pendingEventDeletes[targetId];
-
-                        // 寫入失敗時才恢復原活動，避免畫面與雲端狀態不一致。
-                        if (eventToDelete) {
-                            this.confirmedEvents = {
-                                ...(this.confirmedEvents || {}),
-                                [targetId]: eventToDelete
-                            };
-                        }
-                        this.showToast('⚠️ 取消活動失敗，請稍後再試');
-                    }
+                    // Firebase 成功後才從本地移除，避免雲端資料與畫面不一致
+                    const newEvents = { ...oldEvents };
+                    delete newEvents[targetId];
+                    this.confirmedEvents = newEvents;
+                    this.showToast('已成功取消活動');
                 },
 
                 copyShareLink() {
