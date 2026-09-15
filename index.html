@@ -151,7 +151,7 @@
                                 活動列表 (<span x-text="confirmedEventsList.length"></span> 個活動)
                             </div>
                         </div>
-                        <span class="bg-amber-400 text-slate-900 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-black">多活動模式</span>
+                        <span class="bg-amber-400 text-slate-900 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-black">夾時間模式</span>
                     </div>
 
                     <div class="space-y-2 max-h-36 overflow-y-auto custom-scrollbar pr-1">
@@ -1129,10 +1129,10 @@
                         this.availabilityMap[dateKey] = {};
                     }
 
-                    const currentStatus = this.availabilityMap[dateKey][this.currentUser.id];
+                    const currentStatus = this.availabilityMap[dateKey][this.currentUser.id] || null;
                     let nextStatus = null;
 
-                    if (!currentStatus) {
+                    if (!currentStatus || currentStatus === 'none') {
                         nextStatus = 'free';
                         this.showToast(`已標記 ${this.formatDateTitle(dateKey)}：🟢 有空`);
                     } else if (currentStatus === 'free') {
@@ -1141,16 +1141,20 @@
                     } else if (currentStatus === 'maybe') {
                         nextStatus = 'busy';
                         this.showToast(`已變更 ${this.formatDateTitle(dateKey)}：🔴 沒空`);
-                    } else {
-                        nextStatus = null;
+                    } else if (currentStatus === 'busy') {
+                        // 第四次：使用明確的 'none' 儲存「取消」，避免 deleteField() 在此流程造成狀態卡死。
+                        nextStatus = 'none';
                         this.showToast(`已取消 ${this.formatDateTitle(dateKey)} 的標記`);
                     }
+
+                    // 先更新本地狀態，確保第四次「取消」立即可見；'none' 代表未標記，不計入任何人數。
+                    this.availabilityMap[dateKey][this.currentUser.id] = nextStatus;
 
                     if (this.isFirebaseActive && db) {
                         try {
                             const dateDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'schedules', dateKey);
                             const updateData = {};
-                            updateData[this.currentUser.id] = nextStatus || deleteField();
+                            updateData[this.currentUser.id] = nextStatus;
                             await setDoc(dateDocRef, updateData, { merge: true });
                         } catch (err) {
                             console.error("寫入時間失敗:", err);
