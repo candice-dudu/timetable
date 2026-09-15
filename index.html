@@ -884,7 +884,7 @@
                 },
 
                 get confirmedEventsList() {
-                    const list = Object.values(this.confirmedEvents).filter(e => e && (e.dateKey || e.startDate));
+                    const list = Object.values(this.confirmedEvents || {}).filter(e => e && (e.dateKey || e.startDate));
                     return list.sort((a, b) => {
                         const startA = a.startDate || a.dateKey;
                         const startB = b.startDate || b.dateKey;
@@ -1434,7 +1434,11 @@
                         updatedAt: new Date().toISOString()
                     };
 
-                    this.confirmedEvents[eventId] = eventObj;
+                    // ⚡ 強制更新物件引用，觸發 Alpine.js 即時更新頂部 Banner 渲染
+                    this.confirmedEvents = {
+                        ...this.confirmedEvents,
+                        [eventId]: eventObj
+                    };
                     this.showEventModal = false;
 
                     if (this.isFirebaseActive && db) {
