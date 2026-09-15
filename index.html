@@ -169,7 +169,7 @@
                                         <span x-text="(event.isMultiDay ? '✈️ ' : '🗓️ ') + event.title"></span>
                                     </span>
                                 </div>
-                                <button @click="clearConfirmedEvent(event.id)" title="取消此聚會" class="text-[10px] bg-black/20 hover:bg-red-600/80 active:scale-95 text-white px-2 py-1 rounded-lg transition font-bold shrink-0 touch-manipulation border border-white/20 ml-2">
+                                <button @click.stop.prevent="clearConfirmedEvent(event.id)" title="取消此聚會" class="text-[10px] bg-black/20 hover:bg-red-600/80 active:scale-95 text-white px-2 py-1 rounded-lg transition font-bold shrink-0 touch-manipulation border border-white/20 ml-2">
                                     取消
                                 </button>
                             </div>
@@ -1476,34 +1476,55 @@
                 async clearConfirmedEvent(targetId) {
                     if (!targetId) return;
 
-                    // 先在本地移除；同時標記 pending delete，避免舊 snapshot 把活動重新帶回來
+                    // 先立即從畫面移除，讓按鈕有即時反應；同時阻止舊 snapshot 把它帶回來。
+                    const eventToDelete = this.confirmedEvents ? this.confirmedEvents[targetId] : null;
                     delete this.pendingEventWrites[targetId];
                     this.pendingEventDeletes[targetId] = true;
-                    const newEvents = { ...this.confirmedEvents };
-                    delete newEvents[targetId];
-                    this.confirmedEvents = newEvents;
 
-                    if (this.isFirebaseActive && db) {
-                        try {
-                            const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
-                            const updateData = {};
-                            updateData[`eventsMap.${targetId}`] = deleteField();
-                            await setDoc(eventRef, updateData, { merge: true });
-                            delete this.pendingEventDeletes[targetId];
-                        } catch (err) {
-                            console.error("取消聚會失敗:", err);
-                            delete this.pendingEventDeletes[targetId];
-                            const restored = this.confirmedEvents;
-                            // 交由下一次 Firebase snapshot 恢復正式資料；不自行猜測原活動內容
-                            this.confirmedEvents = { ...restored };
-                            this.showToast('⚠️ 取消活動失敗，請稍後再試');
-                            return;
-                        }
-                    } else {
+                    const localEvents = { ...(this.confirmedEvents || {}) };
+                    delete localEvents[targetId];
+                    this.confirmedEvents = localEvents;
+                    this.showToast(`正在取消活動：「${eventToDelete?.title || '活動'}」...`);
+
+                    if (!(this.isFirebaseActive && db)) {
                         delete this.pendingEventDeletes[targetId];
+                        this.showToast('已成功取消活動');
+                        return;
                     }
 
-                    this.showToast('已成功取消活動');
+                    try {
+                        const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
+
+                        // 使用 Firestore 原生 deleteField 精準刪除該活動。
+                        // eventId 只含 evt_、日期及 timestamp，不含 '.'，可安全作為 map key。
+                        const updateData = {};
+                        updateData[`eventsMap.${targetId}`] = deleteField();
+                        await setDoc(eventRef, updateData, { merge: true });
+
+                        // 確認雲端已刪除；若沒有，保留 pending delete，避免 snapshot 把活動帶回。
+                        const verifySnap = await getDoc(eventRef);
+                        const verifyData = verifySnap.exists() ? verifySnap.data() : null;
+                        const stillExists = !!(verifyData && verifyData.eventsMap && verifyData.eventsMap[targetId]);
+
+                        if (stillExists) {
+                            throw new Error('Firestore 尚未確認刪除活動');
+                        }
+
+                        delete this.pendingEventDeletes[targetId];
+                        this.showToast('已成功取消活動');
+                    } catch (err) {
+                        console.error('取消聚會失敗:', err);
+                        delete this.pendingEventDeletes[targetId];
+
+                        // 寫入失敗時才恢復原活動，避免畫面與雲端狀態不一致。
+                        if (eventToDelete) {
+                            this.confirmedEvents = {
+                                ...(this.confirmedEvents || {}),
+                                [targetId]: eventToDelete
+                            };
+                        }
+                        this.showToast('⚠️ 取消活動失敗，請稍後再試');
+                    }
                 },
 
                 copyShareLink() {
