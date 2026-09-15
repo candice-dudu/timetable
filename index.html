@@ -1423,10 +1423,37 @@
                     if (this.isFirebaseActive && db) {
                         try {
                             const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'events', 'confirmed');
-                            const updateData = {};
-                            updateData[`eventsMap.${eventId}`] = eventObj;
-                            await setDoc(eventRef, updateData, { merge: true });
-                            // Firestore 已確認寫入；之後 snapshot 可直接接管資料
+
+                            // 重要修正：不要只更新 eventsMap.<eventId> 的巢狀欄位。
+                            // 先讀取雲端現有 eventsMap，再合併新活動後整個寫回，
+                            // 確保重新整理後 Firestore 真的保存了新活動。
+                            const currentSnap = await getDoc(eventRef);
+                            let cloudEvents = {};
+                            if (currentSnap.exists()) {
+                                const cloudData = currentSnap.data();
+                                if (cloudData.eventsMap && typeof cloudData.eventsMap === 'object') {
+                                    cloudEvents = { ...cloudData.eventsMap };
+                                } else if (cloudData.dateKey) {
+                                    const legacyId = cloudData.id || cloudData.dateKey;
+                                    cloudEvents = { [legacyId]: cloudData };
+                                }
+                            }
+
+                            cloudEvents[eventId] = eventObj;
+                            await setDoc(eventRef, { eventsMap: cloudEvents }, { merge: true });
+
+                            // 再確認一次真正寫入 Firestore，才解除 pending 保護。
+                            const verifySnap = await getDoc(eventRef);
+                            const verifyData = verifySnap.exists() ? verifySnap.data() : null;
+                            const savedEvent = verifyData && verifyData.eventsMap
+                                ? verifyData.eventsMap[eventId]
+                                : null;
+
+                            if (!savedEvent) {
+                                throw new Error('Firestore 寫入後找不到新活動，可能被安全規則或其他同步程序拒絕。');
+                            }
+
+                            // Firestore 已確認保存；之後重新整理仍可從雲端讀回。
                             delete this.pendingEventWrites[eventId];
                         } catch (err) {
                             console.error("寫入聚會活動失敗:", err);
