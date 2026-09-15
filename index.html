@@ -826,6 +826,9 @@
                 },
                 focusedUserId: null,
                 bestMatchMode: 'all',
+                // 防止 Firebase 舊 snapshot 在寫入瞬間覆蓋剛新增的活動
+                pendingEventWrites: {},
+                pendingEventDeletes: {},
 
                 showEventModal: false,
                 openSettingsModal: false,
@@ -932,11 +935,22 @@
                     onSnapshot(eventRef, (docSnap) => {
                         if (docSnap.exists()) {
                             const data = docSnap.data();
-                            if (data.eventsMap) {
-                                this.confirmedEvents = data.eventsMap;
+                            let cloudEvents = {};
+                            if (data.eventsMap && typeof data.eventsMap === 'object') {
+                                cloudEvents = data.eventsMap;
                             } else if (data.dateKey) {
-                                this.confirmedEvents = { [data.dateKey]: data };
+                                const legacyId = data.id || data.dateKey;
+                                cloudEvents = { [legacyId]: data };
                             }
+
+                            // 合併本地尚未被 snapshot 看見的新增活動；避免「跳一下後消失」
+                            Object.entries(this.pendingEventWrites).forEach(([eventId, event]) => {
+                                cloudEvents[eventId] = event;
+                            });
+                            Object.keys(this.pendingEventDeletes).forEach(eventId => {
+                                delete cloudEvents[eventId];
+                            });
+                            this.confirmedEvents = cloudEvents;
                         }
                     });
 
@@ -1400,7 +1414,9 @@
                         updatedAt: new Date().toISOString()
                     };
 
-                    // 核心修復點：使用解構重新指派，確保 Alpine 發現資料有變
+                    // 先記錄 pending，避免 Firebase 舊 snapshot 把剛新增的活動蓋掉
+                    this.pendingEventWrites[eventId] = eventObj;
+                    delete this.pendingEventDeletes[eventId];
                     this.confirmedEvents = { ...this.confirmedEvents, [eventId]: eventObj };
                     this.showEventModal = false;
 
@@ -1410,9 +1426,19 @@
                             const updateData = {};
                             updateData[`eventsMap.${eventId}`] = eventObj;
                             await setDoc(eventRef, updateData, { merge: true });
+                            // Firestore 已確認寫入；之後 snapshot 可直接接管資料
+                            delete this.pendingEventWrites[eventId];
                         } catch (err) {
                             console.error("寫入聚會活動失敗:", err);
+                            delete this.pendingEventWrites[eventId];
+                            const rollback = { ...this.confirmedEvents };
+                            delete rollback[eventId];
+                            this.confirmedEvents = rollback;
+                            this.showToast('⚠️ 活動儲存失敗，請稍後再試');
+                            return;
                         }
+                    } else {
+                        delete this.pendingEventWrites[eventId];
                     }
 
                     const statusText = this.eventStatus === 'confirmed' ? '✅ 正式敲定' : '⏳ 暫定';
@@ -1423,10 +1449,12 @@
                 async clearConfirmedEvent(targetId) {
                     if (!targetId) return;
 
-                    // 核心修復點：使用解構重新指派，確保 Alpine 發現資料被刪除
+                    // 先在本地移除；同時標記 pending delete，避免舊 snapshot 把活動重新帶回來
+                    delete this.pendingEventWrites[targetId];
+                    this.pendingEventDeletes[targetId] = true;
                     const newEvents = { ...this.confirmedEvents };
                     delete newEvents[targetId];
-                    this.confirmedEvents = newEvents; 
+                    this.confirmedEvents = newEvents;
 
                     if (this.isFirebaseActive && db) {
                         try {
@@ -1434,9 +1462,18 @@
                             const updateData = {};
                             updateData[`eventsMap.${targetId}`] = deleteField();
                             await setDoc(eventRef, updateData, { merge: true });
+                            delete this.pendingEventDeletes[targetId];
                         } catch (err) {
                             console.error("取消聚會失敗:", err);
+                            delete this.pendingEventDeletes[targetId];
+                            const restored = this.confirmedEvents;
+                            // 交由下一次 Firebase snapshot 恢復正式資料；不自行猜測原活動內容
+                            this.confirmedEvents = { ...restored };
+                            this.showToast('⚠️ 取消活動失敗，請稍後再試');
+                            return;
                         }
+                    } else {
+                        delete this.pendingEventDeletes[targetId];
                     }
 
                     this.showToast('已成功取消活動');
